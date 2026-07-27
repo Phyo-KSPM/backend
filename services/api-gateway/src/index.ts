@@ -6,6 +6,7 @@ import { requestIdMiddleware } from './middlewares/request-id.middleware';
 import routes from './routes';
 
 const app = express();
+app.set('trust proxy', 1); // nginx → correct client IP for rate limits
 
 app.use(
   cors({

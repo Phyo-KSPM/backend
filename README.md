@@ -59,7 +59,8 @@ Sample IMEI: `359876543210108`
 
 Already in code: HS256 JWT + expiry, **gateway auth middleware** (token required except login/refresh),
 401 without token on all business routes (including IMEI + NRC), ownership on pay/tax/payments,
-weak-secret boot fail, Swagger off by default in production, login rate limit.
+weak-secret boot fail, Swagger off by default in production,
+**gateway rate limits** (global / login / IMEI) + auth-service login limits.
 
 **Production checklist (required)** — full detail in [`project-setup.txt`](./project-setup.txt) §B7:
 
@@ -73,34 +74,38 @@ weak-secret boot fail, Swagger off by default in production, login rate limit.
 `GET /health` is **localhost-only** (blocked when reached via nginx / public proxy).  
 **All other `/openapi/v1/*` routes** need `Authorization: Bearer <accessToken>`.
 
+**Gateway rate limits (per IP):** all `120/min` · login `20/15min` · auth `40/15min` · IMEI `30/min` → **429** when exceeded.
+
 **Next:** Postgres/Redis strong creds, `CORS_ORIGINS`, non-root PM2, real payment webhooks, IRD verify.
 
 After deploy: `git pull` → set `JWT_SECRET` → `npm install` → `pm2:delete` → `pm2:start` → `pm2 save`
+
+## Services (detailed READMEs)
+
+| Service | Port | Doc |
+|---------|------|-----|
+| [api-gateway](./services/api-gateway/README.md) | 3000 | Edge: auth, rate limit, proxy |
+| [swagger-service](./services/swagger-service/README.md) | 3001 | OpenAPI / Swagger UI |
+| [bff](./services/bff/README.md) | 3002 | Aggregated login + dashboard |
+| [auth-service](./services/auth-service/README.md) | 3010 | Login, JWT, device binding |
+| [users-service](./services/users-service/README.md) | 3011 | Profile, dealer verify |
+| [devices-service](./services/devices-service/README.md) | 3012 | IMEI check |
+| [tax-service](./services/tax-service/README.md) | 3013 | Tax applications |
+| [payments-service](./services/payments-service/README.md) | 3014 | Batches & payments |
+| [claims-service](./services/claims-service/README.md) | 3015 | Device claims |
+| [activities-service](./services/activities-service/README.md) | 3016 | Activity feed |
+| [nrc-service](./services/nrc-service/README.md) | 3017 | NRC townships |
+| [packages/shared](./packages/shared/README.md) | — | JWT, middleware, rate limit, DB, Redis |
 
 ## Infrastructure
 
 | Component | Port | Notes |
 |-----------|------|--------|
-| api-gateway | 3000 | Public `/openapi/v1` (+ `/api`) |
-| swagger-service | 3001 | Swagger UI at `/docs` |
-| bff | 3002 | Backend-for-frontend |
 | PostgreSQL | 5432 | Windows: Docker · Linux prod: host `postgresql` |
 | Redis | 6379 | Windows: Docker · Linux prod: host `redis-server` |
 
-## Domain services
+See [Services table](#services-detailed-readmes) above for app ports.
 
-| Service | Port | Tables | Routes |
-|---------|------|--------|--------|
-| auth-service | 3010 | `users`, `refresh_tokens`, `user_device_bindings` | `/login`, `/auth/refresh`, `/device/*` |
-| users-service | 3011 | `users` | `/profile`, `/dealer/verify` |
-| devices-service | 3012 | `devices`, `imei_check_logs` | `/imei/check`, `/imei/bulk-check` |
-| tax-service | 3013 | `tax_applications`, `tax_application_items` | `/tax/applications` |
-| payments-service | 3014 | `payments`, `payment_batches`, `payment_batch_items` | `/payments/*` |
-| claims-service | 3015 | `device_claims`, `claim_documents` | `/claims` |
-| activities-service | 3016 | `activities` | `/activities` |
-| nrc-service | 3017 | `nrc_regions`, `nrc_townships` | `/nrc/townships` |
-
-## Database & cache
 
 - Migrations: `npm run db:migrate`
 - Seeds: `npm run db:seed`

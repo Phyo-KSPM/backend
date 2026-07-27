@@ -260,7 +260,8 @@ B6. ecosystem path
     - Public: POST /login, POST /auth/refresh, POST /bff/login သာ
     - GET /health = localhost / SSH သာ (nginx/public proxy → 404)
     - IMEI / NRC / profile / tax / payments / claims / activities အားလုံး token လို
-    - ownership checks, weak JWT_SECRET boot-fail, Swagger prod default off, login rate limit
+    - Gateway rate limits: all 120/min, login 20/15min, auth 40/15min, IMEI 30/min (429)
+    - ownership checks, weak JWT_SECRET boot-fail, Swagger prod default off
   Server / ops ဘက်မှာ အောက်ပါကို စစ်ပါ။
 
   ---------- ချက်ချင်း (deploy တိုင်း) ----------
