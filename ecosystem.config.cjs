@@ -45,8 +45,9 @@ function app(name, entry) {
     watch: false,
     autorestart: true,
     max_restarts: 20,
-    min_uptime: '5s',
-    restart_delay: 2000,
+    min_uptime: '10s',
+    restart_delay: 3000,
+    listen_timeout: 10000,
     kill_timeout: 5000,
     env: {
       NODE_ENV:

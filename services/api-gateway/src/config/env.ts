@@ -1,19 +1,12 @@
 import dotenv from 'dotenv';
-dotenv.config(
-  process.env.DOTENV_CONFIG_PATH
-    ? { path: process.env.DOTENV_CONFIG_PATH }
-    : undefined
-);
+dotenv.config({
+  path: process.env.DOTENV_CONFIG_PATH || undefined,
+  quiet: true,
+});
 
-function parseOrigins(raw?: string): string[] | true {
+function parseOrigins(raw?: string): true | string[] {
   if (!raw || raw.trim() === '' || raw.trim() === '*') {
-    // Dev default: allow all. Production must set CORS_ORIGINS explicitly.
-    if (process.env.NODE_ENV === 'production') {
-      console.warn(
-        '[gateway] CORS_ORIGINS not set in production — defaulting to same-host only (no browser CORS)'
-      );
-      return [];
-    }
+    // Public API gateway: allow all unless an explicit allowlist is set.
     return true;
   }
   return raw

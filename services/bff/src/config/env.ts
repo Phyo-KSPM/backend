@@ -1,9 +1,8 @@
 import dotenv from 'dotenv';
-dotenv.config(
-  process.env.DOTENV_CONFIG_PATH
-    ? { path: process.env.DOTENV_CONFIG_PATH }
-    : undefined
-);
+dotenv.config({
+  path: process.env.DOTENV_CONFIG_PATH || undefined,
+  quiet: true,
+});
 
 export const env = {
   port: Number(process.env.BFF_PORT) || 3002,
