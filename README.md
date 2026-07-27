@@ -57,7 +57,8 @@ Sample IMEI: `359876543210108`
 
 ### Security notes
 
-Already in code: HS256 JWT + expiry, 401 without token, ownership on pay/tax/payments,
+Already in code: HS256 JWT + expiry, **gateway auth middleware** (token required except login/refresh),
+401 without token on all business routes (including IMEI + NRC), ownership on pay/tax/payments,
 weak-secret boot fail, Swagger off by default in production, login rate limit.
 
 **Production checklist (required)** — full detail in [`project-setup.txt`](./project-setup.txt) §B7:
@@ -67,6 +68,9 @@ weak-secret boot fail, Swagger off by default in production, login rate limit.
 3. `SWAGGER_ENABLED=false`
 4. Rotate/disable seed demo user (`maung@dealer.com` / `secret123`)
 5. Firewall: public `80/443` (+ SSH) only; block `3001–3017`, `5432`, `6379`
+
+**Public routes only:** `POST /login`, `POST /auth/refresh`, `POST /bff/login` (+ `/health`).  
+**All other `/openapi/v1/*` routes** need `Authorization: Bearer <accessToken>`.
 
 **Next:** Postgres/Redis strong creds, `CORS_ORIGINS`, non-root PM2, real payment webhooks, IRD verify.
 

@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import { assertJwtSecret } from '../../../../packages/shared/src/auth/jwt';
+
 dotenv.config({
   path: process.env.DOTENV_CONFIG_PATH || undefined,
   quiet: true,
@@ -6,7 +8,6 @@ dotenv.config({
 
 function parseOrigins(raw?: string): true | string[] {
   if (!raw || raw.trim() === '' || raw.trim() === '*') {
-    // Public API gateway: allow all unless an explicit allowlist is set.
     return true;
   }
   return raw
@@ -17,6 +18,7 @@ function parseOrigins(raw?: string): true | string[] {
 
 export const env = {
   port: Number(process.env.GATEWAY_PORT) || 3000,
+  jwtSecret: assertJwtSecret(process.env.JWT_SECRET),
   corsOrigins: parseOrigins(process.env.CORS_ORIGINS),
   bffUrl: process.env.BFF_URL || 'http://localhost:3002',
   authServiceUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:3010',

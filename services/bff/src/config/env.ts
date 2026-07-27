@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import { assertJwtSecret } from '../../../../packages/shared/src/auth/jwt';
+
 dotenv.config({
   path: process.env.DOTENV_CONFIG_PATH || undefined,
   quiet: true,
@@ -6,6 +8,7 @@ dotenv.config({
 
 export const env = {
   port: Number(process.env.BFF_PORT) || 3002,
+  jwtSecret: assertJwtSecret(process.env.JWT_SECRET),
   authServiceUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:3010',
   usersServiceUrl: process.env.USERS_SERVICE_URL || 'http://localhost:3011',
   devicesServiceUrl: process.env.DEVICES_SERVICE_URL || 'http://localhost:3012',

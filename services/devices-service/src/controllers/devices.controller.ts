@@ -1,16 +1,21 @@
 import { Request, Response } from 'express';
-import { resolveUserId } from '../../../../packages/shared/src/auth/jwt';
+import { resolveUserId, unauthorizedBody } from '../../../../packages/shared/src/auth/jwt';
 import { DevicesService } from '../services/devices.service';
 import { env } from '../config/env';
 
 const MAX_BULK = 20;
 
-function optionalUserId(authorization?: string): string {
-  return resolveUserId(authorization, env.jwtSecret) || 'anonymous';
+function requireUserId(authorization?: string): string | null {
+  return resolveUserId(authorization, env.jwtSecret);
 }
 
 export const DevicesController = {
   async check(req: Request, res: Response): Promise<void> {
+    const userId = requireUserId(req.header('authorization') || undefined);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
     const { imei1, imei2 } = req.body || {};
     if (!imei1) {
       res.status(400).json({
@@ -19,10 +24,7 @@ export const DevicesController = {
       });
       return;
     }
-    const result = await DevicesService.check(
-      { imei1, imei2 },
-      optionalUserId(req.header('authorization') || undefined)
-    );
+    const result = await DevicesService.check({ imei1, imei2 }, userId);
     if (!result) {
       res.status(404).json({
         success: false,
@@ -34,6 +36,11 @@ export const DevicesController = {
   },
 
   async bulkCheck(req: Request, res: Response): Promise<void> {
+    const userId = requireUserId(req.header('authorization') || undefined);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
     const { imeis } = req.body || {};
     if (!Array.isArray(imeis) || imeis.length === 0) {
       res.status(400).json({
@@ -52,11 +59,6 @@ export const DevicesController = {
       });
       return;
     }
-    res.json(
-      await DevicesService.bulkCheck(
-        { imeis },
-        optionalUserId(req.header('authorization') || undefined)
-      )
-    );
+    res.json(await DevicesService.bulkCheck({ imeis }, userId));
   },
 };

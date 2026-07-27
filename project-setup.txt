@@ -254,8 +254,12 @@ B6. ecosystem path
   အပိုင်း B7 — Production security checklist (မဖြစ်မနေ)
 ################################################################################
 
-  Code မှာ ပါပြီးသား (HS256 JWT, 401 without token, ownership checks,
-  weak JWT_SECRET boot-fail, Swagger prod default off, login rate limit)။
+  Code မှာ ပါပြီးသား:
+    - HS256 JWT + expiry
+    - API Gateway auth middleware (token မပါ → 401)
+    - Public: POST /login, POST /auth/refresh, POST /bff/login, GET /health သာ
+    - IMEI / NRC / profile / tax / payments / claims / activities အားလုံး token လို
+    - ownership checks, weak JWT_SECRET boot-fail, Swagger prod default off, login rate limit
   Server / ops ဘက်မှာ အောက်ပါကို စစ်ပါ။
 
   ---------- ချက်ချင်း (deploy တိုင်း) ----------

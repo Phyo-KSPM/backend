@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { requireAuth } from '../../../../packages/shared/src/auth/middleware';
 import { env } from './config/env';
 import { connectInfra } from './config/database';
 import { UsersController } from './controllers/users.controller';
@@ -15,8 +16,9 @@ async function bootstrap() {
     res.json({ service: 'users-service', status: 'ok', port: env.port });
   });
 
-  app.get('/profile', UsersController.profile);
-  app.post('/dealer/verify', UsersController.verifyDealer);
+  const auth = requireAuth(env.jwtSecret);
+  app.get('/profile', auth, UsersController.profile);
+  app.post('/dealer/verify', auth, UsersController.verifyDealer);
   app.use('/users', routes);
 
   app.use((req, res) => {

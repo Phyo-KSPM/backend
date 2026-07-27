@@ -27,6 +27,7 @@ export function buildOpenApiDoc() {
         '',
         'Authorize with a valid `accessToken` from `POST /login` (Bearer HS256 JWT).',
         '',
+        '**All API routes require Bearer token** except `POST /login`, `POST /auth/refresh`, and `POST /bff/login`.',
         'Protected routes return **401** without a valid token. Tokens expire (`expiresIn`).',
         env.exposeDemoHints
           ? '\n\n**Local demo only:** seed user may exist after `db:seed` — never reuse demo passwords in production.'
@@ -709,9 +710,14 @@ export function buildOpenApiDoc() {
         get: {
           tags: ['NRC'],
           summary: 'List NRC townships',
+          security: bearerAuth,
           responses: {
             '200': {
               description: 'Townships reference data',
+            },
+            '401': {
+              description: 'Unauthorized',
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
             },
           },
         },
