@@ -4,3 +4,4 @@ export * from './utils/response';
 export * from './db/pool';
 export * from './redis/client';
 export * from './auth';
+export * from './http/local-only-health';

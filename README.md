@@ -45,11 +45,11 @@ npm run pm2:status
 npx pm2 save && npx pm2 startup
 ```
 
-Smoke checks:
+Smoke checks (SSH / localhost only — `/health` is not public):
 
-- http://localhost:3000/health
-- http://localhost:3000/openapi/v1/nrc/townships
-- http://localhost:3001/docs — Swagger UI (Try it out → gateway `:3000`)
+- `curl -s http://localhost:3000/health` (on the server)
+- http://localhost:3000/openapi/v1/nrc/townships (needs Bearer token)
+- http://localhost:3001/docs — Swagger UI (local / trusted only)
 
 Demo login (local seed only — change/disable on production):  
 `maung@dealer.com` / `aung@dealer.com` / `thiri@dealer.com` — password `secret123`  
@@ -63,13 +63,14 @@ weak-secret boot fail, Swagger off by default in production, login rate limit.
 
 **Production checklist (required)** — full detail in [`project-setup.txt`](./project-setup.txt) §B7:
 
-1. Gateway `:3000` + BFF `:3002` stable (`/health` OK)
+1. Gateway `:3000` + BFF `:3002` stable — check **on server**: `curl -s http://localhost:3000/health` (not via public URL)
 2. Strong unique `JWT_SECRET` (≥32 chars)
 3. `SWAGGER_ENABLED=false`
 4. Rotate/disable seed demo user (`maung@dealer.com` / `secret123`)
 5. Firewall: public `80/443` (+ SSH) only; block `3001–3017`, `5432`, `6379`
 
-**Public routes only:** `POST /login`, `POST /auth/refresh`, `POST /bff/login` (+ `/health`).  
+**Public routes only:** `POST /login`, `POST /auth/refresh`, `POST /bff/login`.  
+`GET /health` is **localhost-only** (blocked when reached via nginx / public proxy).  
 **All other `/openapi/v1/*` routes** need `Authorization: Bearer <accessToken>`.
 
 **Next:** Postgres/Redis strong creds, `CORS_ORIGINS`, non-root PM2, real payment webhooks, IRD verify.

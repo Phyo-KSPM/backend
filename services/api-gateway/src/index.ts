@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { localOnlyHealth } from '../../../packages/shared/src/http/local-only-health';
 import { env } from './config/env';
 import { requestIdMiddleware } from './middlewares/request-id.middleware';
 import routes from './routes';
@@ -15,14 +16,17 @@ app.use(
 app.disable('x-powered-by');
 app.use(requestIdMiddleware);
 
-app.get('/health', (_req, res) => {
-  res.json({
-    service: 'api-gateway',
-    status: 'ok',
-    port: env.port,
-    bff: env.bffUrl,
-  });
-});
+app.get(
+  '/health',
+  localOnlyHealth((_req, res) => {
+    res.json({
+      service: 'api-gateway',
+      status: 'ok',
+      port: env.port,
+      bff: env.bffUrl,
+    });
+  })
+);
 
 app.use('/openapi/v1', routes);
 app.use('/api', routes);

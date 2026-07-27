@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { localOnlyHealth } from '../../../packages/shared/src/http/local-only-health';
 import { env } from './config/env';
 import routes from './routes';
 
@@ -8,9 +9,12 @@ app.use(cors());
 app.disable('x-powered-by');
 app.use(express.json());
 
-app.get('/health', (_req, res) => {
-  res.json({ service: 'bff', status: 'ok', port: env.port });
-});
+app.get(
+  '/health',
+  localOnlyHealth((_req, res) => {
+    res.json({ service: 'bff', status: 'ok', port: env.port });
+  })
+);
 
 app.use(routes);
 
