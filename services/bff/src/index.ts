@@ -22,21 +22,6 @@ app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
 
-for (const sig of ['SIGTERM', 'SIGINT'] as const) {
-  process.on(sig, () => {
-    console.error(`[bff] received ${sig}, shutting down`);
-    process.exit(0);
-  });
-}
-
-process.on('uncaughtException', (err) => {
-  console.error('[bff] uncaughtException', err);
-});
-
-process.on('unhandledRejection', (err) => {
-  console.error('[bff] unhandledRejection', err);
-});
-
 const server = app.listen(env.port, '0.0.0.0', () => {
   console.log(`[bff] http://0.0.0.0:${env.port}`);
 });
@@ -45,3 +30,12 @@ server.on('error', (err: NodeJS.ErrnoException) => {
   console.error(`[bff] failed to bind :${env.port}`, err.code || err.message);
   process.exit(1);
 });
+
+function shutdown(signal: string) {
+  console.log(`[bff] ${signal}, closing :${env.port}`);
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 5000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
