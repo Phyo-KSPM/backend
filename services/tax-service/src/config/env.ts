@@ -1,5 +1,9 @@
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config(
+  process.env.DOTENV_CONFIG_PATH
+    ? { path: process.env.DOTENV_CONFIG_PATH }
+    : undefined
+);
 
 export const env = {
   port: Number(process.env.TAX_SERVICE_PORT) || 3013,

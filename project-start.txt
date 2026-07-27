@@ -1,15 +1,12 @@
 ================================================================================
-  CEIR Backend — Project Start Guide
-  (အသေးစိတ်လမ်းညွှန်အတွက် project-setup.txt ကို ဖတ်ပါ)
+  CEIR Backend — Project Start Guide (အတိုချုပ်)
+  အသေးစိတ်: project-setup.txt
+  GitHub: https://github.com/Phyo-KSPM/backend.git
 ================================================================================
-
-ဤဖိုင်က အမြန် start အတွက် အတိုချုပ်ဖြစ်ပါတယ်။
-မ run ခင် ပြင်ဆင်ရမယ့် အရာများ + အဆင့်လိုက် အသေးစိတ်ကို
-project-setup.txt ထဲမှာ ရေးထားပါတယ်။
 
 
 --------------------------------------------------------------------------------
-Git ကနေ ပြန်သုံးပုံ (အတိုချုပ်)
+1) Git ကနေ ပြန်သုံးပုံ
 --------------------------------------------------------------------------------
 
   git clone https://github.com/Phyo-KSPM/backend.git
@@ -18,46 +15,48 @@ Git ကနေ ပြန်သုံးပုံ (အတိုချုပ်)
   copy .env.example .env
   npm run docker:infra
   npm run db:setup
-  npm run dev:all
-
-  အသေးစိတ်: project-setup.txt → အပိုင်း I
-
-
---------------------------------------------------------------------------------
-မ run ခင် (Pre-flight) — မမေ့ရ
---------------------------------------------------------------------------------
-
-  1. Node.js 20+ တပ်ထား (node -v / npm -v)
-  2. Docker Desktop ဖွင့်ထား (Running)
-  3. backend folder သို့ cd
-  4. npm install
-  5. .env ရှိကြောင်း စစ် (မရှိရင် copy .env.example .env)
-  6. DATABASE_URL / REDIS_URL မှန်ကြောင်း စစ်
-  7. Port 5432, 6379, 3000 အလွတ်ဖြစ်ကြောင်း စစ်
+  npm run pm2:start
+  npm run pm2:status
 
 
 --------------------------------------------------------------------------------
-အဆင့်လိုက် Start
+2) မ run ခင် (Pre-flight)
 --------------------------------------------------------------------------------
 
-  STEP 1  Docker Desktop ဖွင့် → Ready ဖြစ်အောင် စောင့်
+  [ ] Node.js 20+          (node -v / npm -v)
+  [ ] Docker Desktop       (Running)
+  [ ] backend folder သို့ cd
+  [ ] npm install
+  [ ] .env ရှိ            (မရှိရင် copy .env.example .env)
+  [ ] DATABASE_URL / REDIS_URL မှန်
+  [ ] Port 5432, 6379, 3000 အလွတ်
 
-  STEP 2  Infrastructure (Postgres + Redis)
+
+--------------------------------------------------------------------------------
+3) အဆင့်လိုက် Start (အကြံပြု = PM2)
+--------------------------------------------------------------------------------
+
+  STEP 1  Docker Desktop ဖွင့် → Ready
+
+  STEP 2  Infra
 
             npm run docker:infra
-
-          စစ်ရန်:
-
             docker ps --filter "name=ceir-"
+            → (healthy) စောင့်
 
-          (healthy) ဖြစ်သည်အထိ စောင့်
-
-  STEP 3  Migrate + Seed (ပထမဆုံး / schema ပြောင်းရင်)
+  STEP 3  DB
 
             npm run db:setup
 
-  STEP 4  App services
+  STEP 4  Apps (PM2)
 
+            npm run pm2:start
+            npm run pm2:status     → online ၁၀ ခု
+            npm run pm2:logs       → လိုရင်
+
+          Foreground debug လိုရင်:
+
+            npm run pm2:delete
             npm run dev:all
 
   STEP 5  Smoke test
@@ -65,51 +64,103 @@ Git ကနေ ပြန်သုံးပုံ (အတိုချုပ်)
             http://localhost:3000/health
             http://localhost:3000/openapi/v1/nrc/townships
 
-            Login:
-              email: maung@dealer.com
-              password: secret123
-              deviceFingerprint: fp_test_device_001
-
-            IMEI:
-              359876543210108
+            Login:  maung@dealer.com / secret123
+                    deviceFingerprint: fp_test_device_001
+            IMEI:   359876543210108
 
 
 --------------------------------------------------------------------------------
-နေ့စဉ် (schema မပြောင်းရင်)
+4) နေ့စဉ် (schema မပြောင်းရင်)
 --------------------------------------------------------------------------------
 
   1) Docker Desktop ဖွင့်
   2) npm run docker:infra
-  3) npm run dev:all
+  3) npm run pm2:start
+  4) npm run pm2:status
 
 
 --------------------------------------------------------------------------------
-ရပ်နည်း
+5) PM2 commands
 --------------------------------------------------------------------------------
 
-  App:   Ctrl + C
-  Infra: npm run docker:infra:down
+  npm run pm2:start      စတင်
+  npm run pm2:status     အခြေအနေ
+  npm run pm2:logs       logs
+  npm run pm2:restart    restart
+  npm run pm2:stop       ရပ်
+  npm run pm2:delete     list ကနေ ဖျက်
+  npm run pm2:flush      log ရှင်း
+
+  Config: ecosystem.config.cjs
+  Logs:   logs\
 
 
 --------------------------------------------------------------------------------
-Quick copy-paste
+6) ရပ်နည်း
+--------------------------------------------------------------------------------
+
+  App (PM2):     npm run pm2:stop   သို့  npm run pm2:delete
+  App (dev:all): Ctrl + C
+  Infra:         npm run docker:infra:down
+
+
+--------------------------------------------------------------------------------
+7) Quick copy-paste (local)
 --------------------------------------------------------------------------------
 
   cd C:\Users\rnd\Desktop\project-setup\backend
   npm install
   npm run docker:infra
   npm run db:setup
-  npm run dev:all
+  npm run pm2:start
+  npm run pm2:status
 
 
 --------------------------------------------------------------------------------
-အသေးစိတ်
+8) Services / Ports
 --------------------------------------------------------------------------------
 
-  project-setup.txt ကို ဖတ်ပါ။
-  - Pre-flight checklist
-  - Step-by-step
-  - API list
-  - Troubleshooting
+  api-gateway          3000
+  bff                  3002
+  auth-service         3010
+  users-service        3011
+  devices-service      3012
+  tax-service          3013
+  payments-service     3014
+  claims-service       3015
+  activities-service   3016
+  nrc-service          3017
+  postgres             5432
+  redis                6379
+
+
+--------------------------------------------------------------------------------
+9) Ubuntu (/opt/ceir/backend)
+--------------------------------------------------------------------------------
+
+  cd /opt/ceir/backend
+  cp .env.example .env
+  npm install
+  npm run docker:infra
+  npm run db:setup
+  npm run pm2:start
+  npm run pm2:status
+
+  ecosystem.config.cjs က /opt/ceir/backend ကို အလိုအလျောက် သုံးသည်။
+  အသေးစိတ်: project-setup.txt → အပိုင်း J
+
+
+--------------------------------------------------------------------------------
+10) အသေးစိတ်
+--------------------------------------------------------------------------------
+
+  project-setup.txt
+    - Pre-flight checklist
+    - Step-by-step
+    - PM2 အပြည့်
+    - Git clone
+    - Ubuntu /opt/ceir/backend
+    - API list
+    - Troubleshooting
 
 ================================================================================

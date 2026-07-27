@@ -26,3 +26,8 @@ data/*.db-*
 # Coverage / test
 coverage/
 .nyc_output/
+
+# PM2
+logs/*
+!logs/.gitkeep
+.pm2/
