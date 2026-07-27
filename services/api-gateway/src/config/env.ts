@@ -1,10 +1,11 @@
 import dotenv from 'dotenv';
 import { assertJwtSecret } from '../../../../packages/shared/src/auth/jwt';
 
-dotenv.config({
-  path: process.env.DOTENV_CONFIG_PATH || undefined,
-  quiet: true,
-});
+dotenv.config(
+  process.env.DOTENV_CONFIG_PATH
+    ? { path: process.env.DOTENV_CONFIG_PATH }
+    : undefined
+);
 
 function parseOrigins(raw?: string): true | string[] {
   if (!raw || raw.trim() === '' || raw.trim() === '*') {

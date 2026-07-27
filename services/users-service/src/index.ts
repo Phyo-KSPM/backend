@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { requireAuth } from '../../../../packages/shared/src/auth/middleware';
+import { requireAuth } from '../../../packages/shared/src/auth/middleware';
 import { env } from './config/env';
 import { connectInfra } from './config/database';
 import { UsersController } from './controllers/users.controller';
