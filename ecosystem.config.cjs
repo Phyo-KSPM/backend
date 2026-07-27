@@ -47,7 +47,6 @@ function app(name, entry) {
     max_restarts: 20,
     min_uptime: '10s',
     restart_delay: 3000,
-    listen_timeout: 10000,
     kill_timeout: 5000,
     env: {
       NODE_ENV:

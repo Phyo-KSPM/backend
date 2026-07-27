@@ -31,22 +31,26 @@ app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
 
-const server = app.listen(env.port, () => {
-  console.log(`[api-gateway] http://localhost:${env.port}`);
-  console.log(`  /openapi/v1/* and /api/* -> domain services`);
-});
-
-server.on('error', (err: NodeJS.ErrnoException) => {
-  console.error(`[api-gateway] failed to bind :${env.port}`, err.message);
-  process.exit(1);
-});
+for (const sig of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(sig, () => {
+    console.error(`[api-gateway] received ${sig}, shutting down`);
+    process.exit(0);
+  });
+}
 
 process.on('uncaughtException', (err) => {
   console.error('[api-gateway] uncaughtException', err);
-  process.exit(1);
 });
 
 process.on('unhandledRejection', (err) => {
   console.error('[api-gateway] unhandledRejection', err);
+});
+
+const server = app.listen(env.port, '0.0.0.0', () => {
+  console.log(`[api-gateway] http://0.0.0.0:${env.port}`);
+});
+
+server.on('error', (err: NodeJS.ErrnoException) => {
+  console.error(`[api-gateway] failed to bind :${env.port}`, err.code || err.message);
   process.exit(1);
 });
