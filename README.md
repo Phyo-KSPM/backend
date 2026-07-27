@@ -106,6 +106,7 @@ After deploy: `git pull` → set `JWT_SECRET` → `npm install` → `pm2:delete`
 
 See [Services table](#services-detailed-readmes) above for app ports.
 
+## Database & cache
 
 - Migrations: `npm run db:migrate`
 - Seeds: `npm run db:seed`
