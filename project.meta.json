@@ -1,0 +1,24 @@
+{
+  "architecture": "microservices",
+  "architectureLabel": "Microservices Architecture",
+  "level": "Advanced Enterprise Level",
+  "domainServices": [
+    { "name": "auth", "folder": "auth-service", "port": 3010, "route": "auth" },
+    { "name": "users", "folder": "users-service", "port": 3011, "route": "users" },
+    { "name": "devices", "folder": "devices-service", "port": 3012, "route": "imei" },
+    { "name": "tax", "folder": "tax-service", "port": 3013, "route": "tax" },
+    { "name": "payments", "folder": "payments-service", "port": 3014, "route": "payments" },
+    { "name": "claims", "folder": "claims-service", "port": 3015, "route": "claims" },
+    { "name": "activities", "folder": "activities-service", "port": 3016, "route": "activities" },
+    { "name": "nrc", "folder": "nrc-service", "port": 3017, "route": "nrc" }
+  ],
+  "database": "postgresql",
+  "databaseLabel": "PostgreSQL",
+  "orm": "none",
+  "ormLabel": "None (raw driver)",
+  "infrastructure": [
+    { "name": "api-gateway", "port": 3000 },
+    { "name": "bff", "port": 3002 }
+  ],
+  "domainServicesCsv": "auth,users,devices,tax,payments,claims,activities,nrc"
+}

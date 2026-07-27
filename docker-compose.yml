@@ -1,0 +1,251 @@
+services:
+  api-gateway:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/api-gateway/src/index.ts"
+    ports:
+      - "3000:3000"
+    environment:
+      GATEWAY_PORT: 3000
+      BFF_URL: http://bff:3002
+      AUTH_SERVICE_URL: http://auth-service:3010
+      USERS_SERVICE_URL: http://users-service:3011
+      DEVICES_SERVICE_URL: http://devices-service:3012
+      TAX_SERVICE_URL: http://tax-service:3013
+      PAYMENTS_SERVICE_URL: http://payments-service:3014
+      CLAIMS_SERVICE_URL: http://claims-service:3015
+      ACTIVITIES_SERVICE_URL: http://activities-service:3016
+      NRC_SERVICE_URL: http://nrc-service:3017
+    depends_on:
+      - bff
+      - auth-service
+      - users-service
+      - devices-service
+      - tax-service
+      - payments-service
+      - claims-service
+      - activities-service
+      - nrc-service
+    networks:
+      - ceir-net
+
+  bff:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/bff/src/index.ts"
+    ports:
+      - "3002:3002"
+    environment:
+      BFF_PORT: 3002
+      AUTH_SERVICE_URL: http://auth-service:3010
+      USERS_SERVICE_URL: http://users-service:3011
+      DEVICES_SERVICE_URL: http://devices-service:3012
+      TAX_SERVICE_URL: http://tax-service:3013
+      PAYMENTS_SERVICE_URL: http://payments-service:3014
+      CLAIMS_SERVICE_URL: http://claims-service:3015
+      ACTIVITIES_SERVICE_URL: http://activities-service:3016
+      NRC_SERVICE_URL: http://nrc-service:3017
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - auth-service
+      - users-service
+      - devices-service
+      - tax-service
+      - payments-service
+      - claims-service
+      - activities-service
+      - nrc-service
+      - redis
+    networks:
+      - ceir-net
+
+  auth-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/auth-service/src/index.ts"
+    ports:
+      - "3010:3010"
+    environment:
+      AUTH_SERVICE_PORT: 3010
+      JWT_SECRET: change-me-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_DATABASE: app_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ceir-net
+
+  users-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/users-service/src/index.ts"
+    ports:
+      - "3011:3011"
+    environment:
+      USERS_SERVICE_PORT: 3011
+      JWT_SECRET: change-me-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_DATABASE: app_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ceir-net
+
+  devices-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/devices-service/src/index.ts"
+    ports:
+      - "3012:3012"
+    environment:
+      DEVICES_SERVICE_PORT: 3012
+      JWT_SECRET: change-me-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ceir-net
+
+  tax-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/tax-service/src/index.ts"
+    ports:
+      - "3013:3013"
+    environment:
+      TAX_SERVICE_PORT: 3013
+      JWT_SECRET: change-me-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ceir-net
+
+  payments-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/payments-service/src/index.ts"
+    ports:
+      - "3014:3014"
+    environment:
+      PAYMENTS_SERVICE_PORT: 3014
+      JWT_SECRET: change-me-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ceir-net
+
+  claims-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/claims-service/src/index.ts"
+    ports:
+      - "3015:3015"
+    environment:
+      CLAIMS_SERVICE_PORT: 3015
+      JWT_SECRET: change-me-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ceir-net
+
+  activities-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/activities-service/src/index.ts"
+    ports:
+      - "3016:3016"
+    environment:
+      ACTIVITIES_SERVICE_PORT: 3016
+      JWT_SECRET: change-me-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ceir-net
+
+  nrc-service:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npx tsx services/nrc-service/src/index.ts"
+    ports:
+      - "3017:3017"
+    environment:
+      NRC_SERVICE_PORT: 3017
+      JWT_SECRET: change-me-in-production
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ceir-net
+
+include:
+  - path: ./database/docker-compose.yml
+  - path: ./redis/docker-compose.yml
+
+networks:
+  ceir-net:
+    name: ceir-net
+    driver: bridge

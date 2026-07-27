@@ -1,0 +1,28 @@
+# Dependencies & build
+node_modules/
+dist/
+
+# Local secrets / env
+.env
+.env.local
+.env.*.local
+
+# Logs & OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Local DB files (if any)
+data/*.db
+data/*.db-*
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Coverage / test
+coverage/
+.nyc_output/

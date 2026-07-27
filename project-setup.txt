@@ -1,0 +1,582 @@
+================================================================================
+  CEIR Backend — Project Setup & Start Guide
+  ဖိုင်: project-setup.txt
+================================================================================
+
+ဤဖိုင်က project ကို မ run ခင် ဘာတွေ ပြင်ရမလဲ၊ ပြီးရင် အဆင့်လိုက်
+ဘယ်လို start လုပ်ရမလဲ ဆိုတာကို အသေးစိတ် ရှင်းပြထားပါတယ်။
+
+
+################################################################################
+  အပိုင်း A — Project မ run ခင် ပြင်ဆင်ရမယ့် အရာများ (Pre-flight)
+################################################################################
+
+
+--------------------------------------------------------------------------------
+A1. Software များ အရင် install / ဖွင့်ထားရမယ်
+--------------------------------------------------------------------------------
+
+  [ ] 1. Node.js 20 သို့မဟုတ် အထက်
+        - စစ်ရန်:  node -v
+        - စစ်ရန်:  npm -v
+        - မရှိရင်: https://nodejs.org မှ LTS version download
+
+  [ ] 2. Docker Desktop (Windows)
+        - Postgres + Redis အတွက် မရှိမဖြစ်
+        - Install ပြီးနောက် Docker Desktop ကို ဖွင့်ထားရမယ်
+        - စစ်ရန်:  docker -v
+        - စစ်ရန်:  docker compose version
+        - Desktop UI မှာ status က Running / Engine running ဖြစ်နေရမယ်
+
+  [ ] 3. Terminal (PowerShell သို့ Command Prompt)
+        - project folder ထဲ cd ဝင်နိုင်ရမယ်
+
+  [ ] 4. (Optional) API client
+        - Browser, Postman, Insomnia, သို့ PowerShell Invoke-RestMethod
+
+
+--------------------------------------------------------------------------------
+A2. Project folder သို့ သွားပါ
+--------------------------------------------------------------------------------
+
+  cd C:\Users\rnd\Desktop\project-setup\backend
+
+  မှန်/မမှန် စစ်ရန် — ဤဖိုင်များ ရှိရမယ်:
+
+    package.json
+    docker-compose.yml
+    docker-compose.infra.yml
+    database\
+    redis\
+    services\
+    .env.example
+
+
+--------------------------------------------------------------------------------
+A3. Dependencies install
+--------------------------------------------------------------------------------
+
+  ပထမဆုံးတစ်ခါ (သို့) package.json ပြောင်းပြီးတိုင်း:
+
+    npm install
+
+  အောင်မြင်ရင် node_modules\ folder ပေါ်လာမယ်။
+  Error ထွက်ရင် Node/npm version နဲ့ internet ကို စစ်ပါ။
+
+
+--------------------------------------------------------------------------------
+A4. Environment file (.env) ပြင်ဆင်ခြင်း
+--------------------------------------------------------------------------------
+
+  [ ] .env ရှိ/မရှိ စစ်ပါ
+
+    မရှိရင်:
+
+      copy .env.example .env
+
+  [ ] .env ထဲ အရေးကြီးသော တန်ဖိုးများ (local default):
+
+    DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_db
+    DB_HOST=localhost
+    DB_PORT=5432
+    DB_USER=postgres
+    DB_PASS=postgres
+    DB_DATABASE=app_db
+
+    REDIS_URL=redis://localhost:6379
+    REDIS_HOST=localhost
+    REDIS_PORT=6379
+
+    JWT_SECRET=change-me-in-production
+
+  မှတ်ချက်:
+    - Password ကို database\.env နဲ့ ကိုက်အောင် ထားပါ (default: postgres)
+    - Local app က localhost ကို သုံးသည်
+    - Docker app containers က host အမည် postgres / redis ကို သုံးသည်
+      (root docker-compose.yml ထဲ ကြိုသတ်မှတ်ပြီးသား)
+
+
+--------------------------------------------------------------------------------
+A5. Port များ အလွတ်ဖြစ်အောင် စစ်ပါ
+--------------------------------------------------------------------------------
+
+  အသုံးပြုမယ့် ports:
+
+    5432   PostgreSQL
+    6379   Redis
+    3000   API Gateway
+    3002   BFF
+    3010–3017  Domain services
+
+  တစ်ခုခု ပိတ်နေရင်:
+
+    docker ps
+    netstat -ano | findstr ":5432"
+    netstat -ano | findstr ":3000"
+
+  လိုအပ်ရင် အဲ့ process/container ကို ရပ်ပါ။
+
+
+--------------------------------------------------------------------------------
+A6. Pre-flight checklist (run မလုပ်ခင် အတိုချုပ်)
+--------------------------------------------------------------------------------
+
+  [ ] Docker Desktop Running
+  [ ] node -v / npm -v အဆင်ပြေ
+  [ ] cd backend folder ရောက်ပြီး
+  [ ] npm install ပြီး
+  [ ] .env ရှိပြီး DATABASE_URL / REDIS_URL မှန်
+  [ ] Port 5432, 6379, 3000 က အဓိက အလွတ်
+
+
+################################################################################
+  အပိုင်း B — အဆင့်လိုက် Start လုပ်နည်း (Step by step)
+################################################################################
+
+
+--------------------------------------------------------------------------------
+STEP 1 — Docker Desktop ဖွင့်ပါ
+--------------------------------------------------------------------------------
+
+  1. Start Menu မှ Docker Desktop ဖွင့်
+  2. Engine ready ဖြစ်သည်အထိ စောင့်
+  3. စစ်ရန်:
+
+       docker info
+
+     Error မထွက်ရင် OK
+
+
+--------------------------------------------------------------------------------
+STEP 2 — Postgres + Redis (Infrastructure) စတင်ပါ
+--------------------------------------------------------------------------------
+
+  backend folder ထဲမှာ:
+
+    npm run docker:infra
+
+  ဘာဖြစ်မလဲ:
+    - ceir-postgres container စမယ် (:5432)
+    - ceir-redis container စမယ် (:6379)
+    - network ceir-net သုံးမယ်
+
+  စစ်ဆေးရန်:
+
+    docker ps --filter "name=ceir-"
+
+  Status မှာ (healthy) ဖြစ်သည်အထိ စောင့်ပါ။
+
+  သီးသန့် စချင်ရင်:
+
+    npm run docker:db
+    npm run docker:redis
+
+  ရပ်ချင်ရင်:
+
+    npm run docker:infra:down
+
+
+--------------------------------------------------------------------------------
+STEP 3 — Database migrate + seed
+--------------------------------------------------------------------------------
+
+  Tables မရှိသေးရင် / ပထမဆုံး setup ဆိုရင် မဖြစ်မနေ လုပ်ပါ။
+
+  တစ်ခါတည်း:
+
+    npm run db:setup
+
+  သို့မဟုတ် ခွဲလုပ်:
+
+    npm run db:migrate    → schema / tables / enums ဖန်တီး
+    npm run db:seed       → demo data ထည့်
+
+  SQL ဖိုင်များ:
+
+    database\migrations\001_init_schema.sql
+    database\seeds\001_seed.sql
+
+  အောင်မြင်ရင် terminal မှာ တွေ့ရမယ်:
+
+    [migrate] applied 001_init_schema.sql
+    [migrate] done
+    [seed] applied 001_seed.sql
+    [seed] done
+
+  Seed ထဲပါမယ့် demo data (အဓိက):
+
+    - User: maung@dealer.com / secret123
+    - Devices: IMEI 359876543210108 စသည်
+    - NRC regions / townships
+    - Sample activities
+
+
+--------------------------------------------------------------------------------
+STEP 4 — Application services စတင်ပါ
+--------------------------------------------------------------------------------
+
+  Infra healthy + migrate/seed ပြီးမှသာ လုပ်ပါ။
+
+    npm run dev:all
+
+  (သို့)
+
+    npm run dev
+
+  စတင်မယ့် services:
+
+    Name                 Port    Role
+    -------------------  ------  ----------------------------------
+    api-gateway          3000    Public API entry
+    bff                  3002    Backend-for-frontend
+    auth-service         3010    Login / refresh / device binding
+    users-service        3011    Profile / dealer verify
+    devices-service      3012    IMEI check
+    tax-service          3013    Tax applications
+    payments-service     3014    Payments / batches
+    claims-service       3015    Device claims
+    activities-service   3016    Recent activities
+    nrc-service          3017    NRC townships
+
+  Terminal မှာ service တိုင်းအတွက် တွေ့ရမယ်:
+
+    [db] PostgreSQL connected
+    [redis] connected
+    [auth-service] http://localhost:3010
+    ... စသည်
+
+  Service တစ်ခုချင်းစီ စချင်ရင်:
+
+    npm run dev:gateway
+    npm run dev:auth
+    npm run dev:users
+    npm run dev:devices
+    npm run dev:tax
+    npm run dev:payments
+    npm run dev:claims
+    npm run dev:activities
+    npm run dev:nrc
+
+
+--------------------------------------------------------------------------------
+STEP 5 — အလုပ်လုပ်/မလုပ် စစ်ဆေးပါ (Smoke test)
+--------------------------------------------------------------------------------
+
+  5.1 Health
+
+    Browser သို့မဟုတ်:
+
+      http://localhost:3000/health
+
+  5.2 NRC (public, login မလို)
+
+      GET http://localhost:3000/openapi/v1/nrc/townships
+
+  5.3 Login
+
+      POST http://localhost:3000/openapi/v1/login
+      Content-Type: application/json
+
+      {
+        "email": "maung@dealer.com",
+        "password": "secret123",
+        "deviceFingerprint": "fp_test_device_001",
+        "deviceName": "Samsung Galaxy A16",
+        "platform": "android",
+        "appVersion": "1.0.0"
+      }
+
+    PowerShell:
+
+      Invoke-RestMethod -Method POST `
+        -Uri http://localhost:3000/openapi/v1/login `
+        -ContentType "application/json" `
+        -Body '{"email":"maung@dealer.com","password":"secret123","deviceFingerprint":"fp_test_device_001","platform":"android"}'
+
+  5.4 IMEI check
+
+      POST http://localhost:3000/openapi/v1/imei/check
+
+      {
+        "imei1": "359876543210108"
+      }
+
+  အောင်မြင်ရင် accessToken / device data / regions ပြန်လာမယ်။
+
+
+--------------------------------------------------------------------------------
+STEP 6 — အလုပ်ပြီးရင် ရပ်နည်း
+--------------------------------------------------------------------------------
+
+  1) App services:
+       Terminal မှာ Ctrl + C
+
+  2) Infra (လိုမှ):
+       npm run docker:infra:down
+
+
+################################################################################
+  အပိုင်း C — နေ့စဉ် အသုံးပြုပုံ (Daily workflow)
+################################################################################
+
+  ပထမဆုံးနေ့ / machine အသစ်:
+
+    1. Docker Desktop ဖွင့်
+    2. cd backend
+    3. npm install          (လိုမှ)
+    4. .env စစ်
+    5. npm run docker:infra
+    6. npm run db:setup     (ပထမဆုံး / schema ပြောင်းမှ)
+    7. npm run dev:all
+
+  နောက်နေ့များ (schema မပြောင်းရင်):
+
+    1. Docker Desktop ဖွင့်
+    2. cd backend
+    3. npm run docker:infra
+    4. npm run dev:all
+
+
+################################################################################
+  အပိုင်း D — Docker full stack (အခြားနည်း)
+################################################################################
+
+  App + Postgres + Redis အားလုံး Docker ထဲမှာ:
+
+    npm run docker:up
+
+  ရပ်ရန်:
+
+    npm run docker:down
+
+  မှတ်ချက်:
+    Local development / debug အတွက်
+    “infra Docker + app npm run dev:all” က ပိုအဆင်ပြေပါတယ်။
+
+
+################################################################################
+  အပိုင်း E — API အကျဉ်း
+################################################################################
+
+  Base URL:
+
+    http://localhost:3000/openapi/v1
+
+  (legacy: /api/... လည်း proxy လုပ်ပါတယ်)
+
+  အဓိက paths:
+
+    POST   /login
+    POST   /auth/refresh
+    GET    /device/binding
+    POST   /device/bind
+    GET    /profile
+    POST   /dealer/verify
+    POST   /imei/check
+    POST   /imei/bulk-check
+    POST   /tax/applications
+    GET    /tax/applications/{id}
+    POST   /payments/batches
+    POST   /payments/batches/{id}/pay
+    GET    /payments
+    GET    /payments/{id}
+    POST   /claims
+    GET    /claims
+    GET    /activities
+    GET    /nrc/townships
+
+
+################################################################################
+  အပိုင်း F — Demo credentials
+################################################################################
+
+  Email:       maung@dealer.com
+  Password:    secret123
+  Sample IMEI: 359876543210108
+
+
+################################################################################
+  အပိုင်း G — Troubleshooting
+################################################################################
+
+  Docker daemon is not running
+    → Docker Desktop ဖွင့်ပြီး Ready ဖြစ်အောင် စောင့်
+
+  Port already in use
+    → 5432 / 6379 / 3000–3017 ကို ယူထားတဲ့ process/container ရပ်
+    → docker ps ကြည့်ပြီး docker stop <name>
+
+  DATABASE_URL connection failed / [db] error
+    → npm run docker:infra
+    → ceir-postgres healthy ဖြစ်မှ app ပြန်စ
+    → .env ထဲ DATABASE_URL မှန်/မမှန် စစ်
+
+  Redis connection failed
+    → ceir-redis healthy ဖြစ်/မဖြစ် စစ်
+    → REDIS_URL=redis://localhost:6379
+
+  relation "users" does not exist
+    → npm run db:migrate မလုပ်ရသေးခြင်း
+    → npm run db:setup ပြန်လုပ်
+
+  Login 401 INVALID_CREDENTIALS
+    → email/password မှန်အောင် ရိုက်
+    → npm run db:seed ပြန်လုပ် (demo user ရှိ/မရှိ)
+
+  ACCOUNT_BOUND_TO_OTHER_DEVICE (403)
+    → အရင် bind ထားတဲ့ deviceFingerprint နဲ့ မတူလို့
+    → တူညီတဲ့ fingerprint ပြန်သုံး
+    → သို့မဟုတ် DB ထဲ user_device_bindings row ကို support/admin ပုံစံ ဖျက်
+
+
+################################################################################
+  အပိုင်း H — Folder အကျဉ်း
+################################################################################
+
+  database\                   Postgres compose + migrations + seeds
+  redis\                      Redis compose
+  docker-compose.yml          Full stack (apps + infra)
+  docker-compose.infra.yml    Postgres + Redis only
+  services\                   Microservices source
+  packages\shared\            Shared DB/Redis helpers
+  .env                        Local environment (git မတင် — .env.example သုံး)
+  .env.example                Env template (git တင်ထား)
+  project-setup.txt           ဤလမ်းညွှန်ဖိုင်
+  project-start.txt           Start guide (အတူတူ ကိုးကားနိုင်)
+
+
+################################################################################
+  အပိုင်း I — Git မှ clone လုပ်ပြီး ပြန်သုံးပုံ
+################################################################################
+
+  Remote repository:
+
+    https://github.com/Phyo-KSPM/backend.git
+
+
+--------------------------------------------------------------------------------
+I1. Git ကနေ ပထမဆုံး ဆွဲယူခြင်း (clone)
+--------------------------------------------------------------------------------
+
+  လိုအပ်ချက်:
+    - Git installed (git --version)
+    - Node.js 20+
+    - Docker Desktop Running
+
+  Clone:
+
+    git clone https://github.com/Phyo-KSPM/backend.git
+    cd backend
+
+  (သို့ folder အမည် သတ်မှတ်ချင်ရင်)
+
+    git clone https://github.com/Phyo-KSPM/backend.git my-ceir-backend
+    cd my-ceir-backend
+
+
+--------------------------------------------------------------------------------
+I2. Clone ပြီးနောက် setup (မ run ခင်)
+--------------------------------------------------------------------------------
+
+  1) Dependencies
+
+       npm install
+
+  2) Environment file
+
+       copy .env.example .env
+
+     Windows PowerShell:
+
+       Copy-Item .env.example .env
+
+     macOS / Linux:
+
+       cp .env.example .env
+
+  3) .env ထဲ DATABASE_URL / REDIS_URL မှန်ကြောင်း စစ်
+     (default က local Docker နဲ့ ကိုက်အောင် ထားပြီးသား)
+
+  4) Infrastructure
+
+       npm run docker:infra
+
+  5) Migrate + Seed
+
+       npm run db:setup
+
+  6) App start
+
+       npm run dev:all
+
+
+--------------------------------------------------------------------------------
+I3. Clone ပြီး အမြန် copy-paste
+--------------------------------------------------------------------------------
+
+    git clone https://github.com/Phyo-KSPM/backend.git
+    cd backend
+    npm install
+    copy .env.example .env
+    npm run docker:infra
+    npm run db:setup
+    npm run dev:all
+
+  ပြီးရင်:
+
+    http://localhost:3000/health
+    http://localhost:3000/openapi/v1/nrc/townships
+
+
+--------------------------------------------------------------------------------
+I4. နောက်နေ့ / update ဆွဲယူခြင်း
+--------------------------------------------------------------------------------
+
+    cd backend
+    git pull
+    npm install
+    npm run docker:infra
+    npm run db:setup
+    npm run dev:all
+
+  မှတ်ချက်:
+    - schema မပြောင်းရင် db:setup အစား migrate ပဲ လိုရင် npm run db:migrate
+    - .env က local မှာသာ ရှိမယ် (git ထဲ မပါ) — မဖျက်ပါနှင့်
+
+
+--------------------------------------------------------------------------------
+I5. Git မှာ ဘာတွေ တင်ထား / မတင်ထား
+--------------------------------------------------------------------------------
+
+  တင်ထား:
+    - source code, docker compose, migrations, seeds
+    - .env.example, README, project-setup.txt, project-start.txt
+
+  မတင်ထား (.gitignore):
+    - .env (secrets / local config)
+    - node_modules/
+    - dist/
+
+
+################################################################################
+  အမြန်လမ်းညွှန် (Quick copy-paste) — local folder ရှိပြီးသား
+################################################################################
+
+  cd C:\Users\rnd\Desktop\project-setup\backend
+  npm install
+  npm run docker:infra
+  npm run db:setup
+  npm run dev:all
+
+  ပြီးရင် စစ်ရန်:
+
+    http://localhost:3000/health
+    http://localhost:3000/openapi/v1/nrc/townships
+
+================================================================================
+  အဆင့်အစဉ် အတိုချုပ်
+
+    Git ကနေ   →  git clone → npm install → .env → docker:infra → db:setup → dev:all
+    Local ကနေ →  Node + Docker + npm install + .env
+    ပြီးမှ     →  docker:infra → db:setup → dev:all → smoke test
+================================================================================

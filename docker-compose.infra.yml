@@ -1,0 +1,4 @@
+# Postgres + Redis only (no app services)
+include:
+  - path: ./database/docker-compose.yml
+  - path: ./redis/docker-compose.yml
