@@ -22,7 +22,8 @@ SELECT setval(pg_get_serial_sequence('nrc_townships', 'id'), GREATEST((SELECT MA
 INSERT INTO users (
   id, email, password_hash, phone, full_name, address, township_id,
   business_name, tin, business_registration_no, dealer_verified
-) VALUES (
+) VALUES
+(
   'b1f2a3c4-d5e6-7890-abcd-ef1234567890',
   'maung@dealer.com',
   '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
@@ -33,6 +34,32 @@ INSERT INTO users (
   'QHRM Trading',
   '123456789',
   'REG-2026-001',
+  TRUE
+),
+(
+  'c2a3b4c5-e6f7-8901-bcde-f12345678901',
+  'aung@dealer.com',
+  '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
+  '09123456789',
+  'Aung Aung',
+  'No 12, Kamayut, Yangon',
+  145,
+  'Aung Mobile Shop',
+  '234567890',
+  'REG-2026-002',
+  TRUE
+),
+(
+  'd3b4c5d6-f708-9012-cdef-123456789012',
+  'thiri@dealer.com',
+  '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
+  '09987654321',
+  'Thiri Hlaing',
+  'No 5, Mayangone, Yangon',
+  210,
+  'Thiri Trading Co.',
+  '345678901',
+  'REG-2026-003',
   TRUE
 )
 ON CONFLICT (email) DO UPDATE SET

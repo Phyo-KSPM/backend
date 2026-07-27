@@ -51,7 +51,8 @@ Smoke checks:
 - http://localhost:3000/openapi/v1/nrc/townships
 - http://localhost:3001/docs — Swagger UI (Try it out → gateway `:3000`)
 
-Demo login (local seed only — change/disable on production): `maung@dealer.com` / `secret123`  
+Demo login (local seed only — change/disable on production):  
+`maung@dealer.com` / `aung@dealer.com` / `thiri@dealer.com` — password `secret123`  
 Sample IMEI: `359876543210108`
 
 ### Security notes

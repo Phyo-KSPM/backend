@@ -383,12 +383,13 @@ B6. ecosystem path
   အပိုင်း F — Demo credentials (local / seed သာ)
 ################################################################################
 
-  Email:       maung@dealer.com
-  Password:    secret123
+  Email:       maung@dealer.com | aung@dealer.com | thiri@dealer.com
+  Password:    secret123  (အားလုံးတူ)
   Sample IMEI: 359876543210108
 
   ★ Production မှာ ဤ password မထားရ — B7 checklist §4 ကြည့်
   ★ Swagger / README တွင် demo hint မဖော်ပြရန် (SWAGGER_DEMO_HINTS=false)
+  ★ Account တစ်ခု = deviceFingerprint တစ်ခု (binding) — တူသော fingerprint မမျှဝေရ
 
 
 ################################################################################
