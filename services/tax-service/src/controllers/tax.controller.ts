@@ -1,25 +1,20 @@
 import { Request, Response } from 'express';
+import { resolveUserId, unauthorizedBody } from '../../../../packages/shared/src/auth/jwt';
 import { TaxService } from '../services/tax.service';
+import { env } from '../config/env';
 
-function resolveUserId(authorization?: string): string {
-  if (!authorization?.startsWith('Bearer ')) return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  const token = authorization.slice(7);
-  const parts = token.split('.');
-  if (parts.length !== 3 || parts[0] !== 'demo') return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  try {
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-    return payload.sub || 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  } catch {
-    return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  }
+function requireUserId(authorization?: string): string | null {
+  return resolveUserId(authorization, env.jwtSecret);
 }
 
 export const TaxController = {
   async create(req: Request, res: Response): Promise<void> {
-    const result = await TaxService.create(
-      req.body || {},
-      resolveUserId(req.header('authorization') || undefined)
-    );
+    const userId = requireUserId(req.header('authorization') || undefined);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
+    const result = await TaxService.create(req.body || {}, userId);
     if (!result.ok) {
       res.status(result.status).json({
         success: false,
@@ -31,7 +26,12 @@ export const TaxController = {
   },
 
   async getById(req: Request, res: Response): Promise<void> {
-    const result = await TaxService.getById(String(req.params.id));
+    const userId = requireUserId(req.header('authorization') || undefined);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
+    const result = await TaxService.getById(String(req.params.id), userId);
     if (!result.ok) {
       res.status(result.status).json({
         success: false,

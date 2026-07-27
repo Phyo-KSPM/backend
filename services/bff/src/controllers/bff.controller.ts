@@ -2,12 +2,23 @@ import { Request, Response } from 'express';
 import { BffService } from '../services/bff.service';
 
 export const BffController = {
-  async dashboard(_req: Request, res: Response): Promise<void> {
+  async dashboard(req: Request, res: Response): Promise<void> {
     try {
-      const data = await BffService.getDashboard();
+      const authorization = req.header('authorization') || undefined;
+      if (!authorization?.startsWith('Bearer ')) {
+        res.status(401).json({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Unauthorized' },
+        });
+        return;
+      }
+      const data = await BffService.getDashboard(authorization);
       res.json(data);
     } catch (err: any) {
-      res.status(502).json({ message: 'Upstream service error', detail: err.message });
+      const status = err.response?.status || 502;
+      res.status(status).json(
+        err.response?.data || { message: 'Upstream service error', detail: err.message }
+      );
     }
   },
 

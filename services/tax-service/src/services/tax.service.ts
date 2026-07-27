@@ -2,7 +2,7 @@ import { TaxRepository } from '../repositories/tax.repository';
 import { CreateTaxApplicationDto } from '../types/tax.types';
 
 export const TaxService = {
-  async create(dto: CreateTaxApplicationDto, userId = 'b1f2a3c4-d5e6-7890-abcd-ef1234567890') {
+  async create(dto: CreateTaxApplicationDto, userId: string) {
     const count = dto.devices?.length ?? 0;
     if (count < 1 || count > 10) {
       return {
@@ -23,11 +23,15 @@ export const TaxService = {
     }
   },
 
-  async getById(id: string) {
+  async getById(id: string, userId: string) {
     const data = await TaxRepository.findById(id);
     if (!data) {
       return { ok: false as const, status: 404, code: 'NOT_FOUND', message: 'Tax application not found' };
     }
-    return { ok: true as const, data };
+    if (data.userId !== userId) {
+      return { ok: false as const, status: 403, code: 'FORBIDDEN', message: 'Forbidden' };
+    }
+    const { userId: _uid, ...rest } = data;
+    return { ok: true as const, data: rest };
   },
 };

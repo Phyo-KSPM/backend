@@ -25,11 +25,12 @@ export function buildOpenApiDoc() {
       description: [
         'Public surface via **API Gateway** (`/openapi/v1`).',
         '',
-        '**Demo login:** `maung@dealer.com` / `secret123`',
+        'Authorize with a valid `accessToken` from `POST /login` (Bearer HS256 JWT).',
         '',
-        '**Sample IMEI:** `359876543210108`',
-        '',
-        'Authorize with the `accessToken` from login (Bearer).',
+        'Protected routes return **401** without a valid token. Tokens expire (`expiresIn`).',
+        env.exposeDemoHints
+          ? '\n\n**Local demo only:** seed user may exist after `db:seed` — never reuse demo passwords in production.'
+          : '',
       ].join('\n'),
     },
     servers: [

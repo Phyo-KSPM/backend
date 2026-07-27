@@ -5,7 +5,14 @@ import { requestIdMiddleware } from './middlewares/request-id.middleware';
 import routes from './routes';
 
 const app = express();
-app.use(cors());
+
+app.use(
+  cors({
+    origin: env.corsOrigins === true ? true : env.corsOrigins,
+    credentials: true,
+  })
+);
+app.disable('x-powered-by');
 app.use(requestIdMiddleware);
 
 app.get('/health', (_req, res) => {

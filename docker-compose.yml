@@ -1,4 +1,4 @@
-# Windows local optional full stack. Linux production: do not use Docker.
+﻿# Windows local optional full stack. Linux production: do not use Docker.
 services:
   api-gateway:
     image: node:20-alpine
@@ -74,7 +74,7 @@ services:
       - "3010:3010"
     environment:
       AUTH_SERVICE_PORT: 3010
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
       DB_HOST: postgres
       DB_PORT: 5432
@@ -100,7 +100,7 @@ services:
       - "3011:3011"
     environment:
       USERS_SERVICE_PORT: 3011
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
       DB_HOST: postgres
       DB_PORT: 5432
@@ -126,7 +126,7 @@ services:
       - "3012:3012"
     environment:
       DEVICES_SERVICE_PORT: 3012
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -147,7 +147,7 @@ services:
       - "3013:3013"
     environment:
       TAX_SERVICE_PORT: 3013
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -168,7 +168,7 @@ services:
       - "3014:3014"
     environment:
       PAYMENTS_SERVICE_PORT: 3014
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -189,7 +189,7 @@ services:
       - "3015:3015"
     environment:
       CLAIMS_SERVICE_PORT: 3015
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -210,7 +210,7 @@ services:
       - "3016:3016"
     environment:
       ACTIVITIES_SERVICE_PORT: 3016
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -231,7 +231,7 @@ services:
       - "3017:3017"
     environment:
       NRC_SERVICE_PORT: 3017
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: ${JWT_SECRET}
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/app_db
       REDIS_URL: redis://redis:6379
     depends_on:

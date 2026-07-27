@@ -1,22 +1,11 @@
+import { resolveUserId } from '../../../../packages/shared/src/auth/jwt';
 import { UsersRepository } from '../repositories/users.repository';
 import { DealerVerifyDto } from '../types/users.types';
-
-function resolveUserId(authorization?: string): string | null {
-  if (!authorization?.startsWith('Bearer ')) return null;
-  const token = authorization.slice(7);
-  const parts = token.split('.');
-  if (parts.length !== 3 || parts[0] !== 'demo') return null;
-  try {
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-    return payload.sub || null;
-  } catch {
-    return null;
-  }
-}
+import { env } from '../config/env';
 
 export const UsersService = {
   async getProfile(authorization?: string) {
-    const userId = resolveUserId(authorization);
+    const userId = resolveUserId(authorization, env.jwtSecret);
     if (!userId) {
       return { ok: false as const, status: 401, code: 'UNAUTHORIZED', message: 'Unauthorized' };
     }
@@ -29,7 +18,7 @@ export const UsersService = {
   },
 
   async verifyDealer(authorization: string | undefined, dto: DealerVerifyDto) {
-    const userId = resolveUserId(authorization);
+    const userId = resolveUserId(authorization, env.jwtSecret);
     if (!userId) {
       return { ok: false as const, status: 401, code: 'UNAUTHORIZED', message: 'Unauthorized' };
     }

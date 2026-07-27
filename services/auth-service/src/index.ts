@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { rateLimit } from '../../../../packages/shared/src/auth/rate-limit';
 import { env } from './config/env';
 import { connectInfra } from './config/database';
 import { AuthController } from './controllers/auth.controller';
@@ -11,14 +12,15 @@ async function bootstrap() {
 
   const app = express();
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '100kb' }));
 
   app.get('/health', (_req, res) => {
     res.json({ service: 'auth-service', status: 'ok', port: env.port });
   });
 
-  app.post('/login', AuthController.login);
-  app.use('/auth', authRoutes);
+  const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30 });
+  app.post('/login', loginLimiter, AuthController.login);
+  app.use('/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 60 }), authRoutes);
   app.use('/device', deviceRoutes);
 
   app.use((req, res) => {

@@ -1,10 +1,11 @@
 import { activitiesClient, authClient, usersClient } from './clients';
 
 export const BffService = {
-  async getDashboard() {
+  async getDashboard(authorization: string) {
+    const headers = { Authorization: authorization };
     const [profile, activities] = await Promise.all([
-      usersClient.get('/profile').then((r) => r.data).catch(() => null),
-      activitiesClient.get('/activities?limit=5').then((r) => r.data).catch(() => ({ items: [] })),
+      usersClient.get('/profile', { headers }).then((r) => r.data),
+      activitiesClient.get('/activities?limit=5', { headers }).then((r) => r.data),
     ]);
     return {
       profile,

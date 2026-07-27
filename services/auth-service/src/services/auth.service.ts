@@ -1,5 +1,9 @@
 import { createHash, randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
+import {
+  resolveUserId,
+  signAccessToken,
+} from '../../../../packages/shared/src/auth/jwt';
 import { AuthRepository } from '../repositories/auth.repository';
 import { AuthLoginDto, BindDeviceDto, BindingRow, PublicUser } from '../types/auth.types';
 import { env } from '../config/env';
@@ -24,19 +28,21 @@ function bindingResponse(b: BindingRow, includeExtras = false) {
   };
 }
 
-function issueAccessToken(user: PublicUser) {
-  const payload = Buffer.from(JSON.stringify({ sub: user.id, email: user.email })).toString(
-    'base64url'
-  );
-  return `demo.${payload}.${Buffer.from(env.jwtSecret).toString('base64url')}`;
-}
-
 async function issueTokens(user: PublicUser) {
-  const accessToken = issueAccessToken(user);
+  const accessToken = signAccessToken(
+    { sub: user.id, email: user.email },
+    env.jwtSecret,
+    env.accessTokenTtlSec
+  );
   const refreshToken = `rt_${randomUUID().replace(/-/g, '')}`;
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await AuthRepository.saveRefreshToken(user.id, hashToken(refreshToken), expiresAt);
-  return { accessToken, refreshToken, tokenType: 'Bearer' as const, expiresIn: 3600 };
+  return {
+    accessToken,
+    refreshToken,
+    tokenType: 'Bearer' as const,
+    expiresIn: env.accessTokenTtlSec,
+  };
 }
 
 export const AuthService = {
@@ -173,15 +179,6 @@ export const AuthService = {
   },
 
   resolveUserId(authorization?: string): string | null {
-    if (!authorization?.startsWith('Bearer ')) return null;
-    const token = authorization.slice(7);
-    const parts = token.split('.');
-    if (parts.length !== 3 || parts[0] !== 'demo') return null;
-    try {
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-      return payload.sub || null;
-    } catch {
-      return null;
-    }
+    return resolveUserId(authorization, env.jwtSecret);
   },
 };

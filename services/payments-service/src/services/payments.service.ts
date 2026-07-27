@@ -31,13 +31,28 @@ export const PaymentsService = {
     }
   },
 
-  async payBatch(id: string, dto: PayBatchDto) {
+  async payBatch(id: string, dto: PayBatchDto, userId: string) {
     if (!dto.paymentMethod) {
       return {
         ok: false as const,
         status: 400,
         code: 'VALIDATION_ERROR',
         message: 'paymentMethod is required',
+      };
+    }
+    const batch = await PaymentsRepository.findBatch(id);
+    if (!batch) {
+      return { ok: false as const, status: 404, code: 'NOT_FOUND', message: 'Batch not found' };
+    }
+    if (batch.user_id !== userId) {
+      return { ok: false as const, status: 403, code: 'FORBIDDEN', message: 'Forbidden' };
+    }
+    if (batch.status === 'paid') {
+      return {
+        ok: false as const,
+        status: 409,
+        code: 'ALREADY_PAID',
+        message: 'Batch is already paid',
       };
     }
     const data = await PaymentsRepository.payBatch(id, dto.paymentMethod);
@@ -51,11 +66,15 @@ export const PaymentsService = {
     return PaymentsRepository.listPayments(userId, page, pageSize);
   },
 
-  async getById(paymentId: string) {
+  async getById(paymentId: string, userId: string) {
     const data = await PaymentsRepository.findPayment(paymentId);
     if (!data) {
       return { ok: false as const, status: 404, code: 'NOT_FOUND', message: 'Payment not found' };
     }
-    return { ok: true as const, data };
+    if (data.userId !== userId) {
+      return { ok: false as const, status: 403, code: 'FORBIDDEN', message: 'Forbidden' };
+    }
+    const { userId: _uid, ...rest } = data;
+    return { ok: true as const, data: rest };
   },
 };

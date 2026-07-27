@@ -1,25 +1,20 @@
 import { Request, Response } from 'express';
+import { resolveUserId, unauthorizedBody } from '../../../../packages/shared/src/auth/jwt';
 import { PaymentsService } from '../services/payments.service';
+import { env } from '../config/env';
 
-function resolveUserId(authorization?: string): string {
-  if (!authorization?.startsWith('Bearer ')) return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  const token = authorization.slice(7);
-  const parts = token.split('.');
-  if (parts.length !== 3 || parts[0] !== 'demo') return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  try {
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-    return payload.sub || 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  } catch {
-    return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  }
+function requireUserId(authorization?: string): string | null {
+  return resolveUserId(authorization, env.jwtSecret);
 }
 
 export const PaymentsController = {
   async createBatch(req: Request, res: Response): Promise<void> {
-    const result = await PaymentsService.createBatch(
-      req.body || {},
-      resolveUserId(req.header('authorization') || undefined)
-    );
+    const userId = requireUserId(req.header('authorization') || undefined);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
+    const result = await PaymentsService.createBatch(req.body || {}, userId);
     if (!result.ok) {
       res.status(result.status).json({
         success: false,
@@ -31,7 +26,16 @@ export const PaymentsController = {
   },
 
   async payBatch(req: Request, res: Response): Promise<void> {
-    const result = await PaymentsService.payBatch(String(req.params.id), req.body || {});
+    const userId = requireUserId(req.header('authorization') || undefined);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
+    const result = await PaymentsService.payBatch(
+      String(req.params.id),
+      req.body || {},
+      userId
+    );
     if (!result.ok) {
       res.status(result.status).json({
         success: false,
@@ -43,19 +47,23 @@ export const PaymentsController = {
   },
 
   async list(req: Request, res: Response): Promise<void> {
+    const userId = requireUserId(req.header('authorization') || undefined);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
     const page = Number(req.query.page) || 1;
-    const pageSize = Number(req.query.pageSize) || 20;
-    res.json(
-      await PaymentsService.list(
-        resolveUserId(req.header('authorization') || undefined),
-        page,
-        pageSize
-      )
-    );
+    const pageSize = Math.min(Number(req.query.pageSize) || 20, 100);
+    res.json(await PaymentsService.list(userId, page, pageSize));
   },
 
   async getById(req: Request, res: Response): Promise<void> {
-    const result = await PaymentsService.getById(String(req.params.id));
+    const userId = requireUserId(req.header('authorization') || undefined);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
+    const result = await PaymentsService.getById(String(req.params.id), userId);
     if (!result.ok) {
       res.status(result.status).json({
         success: false,

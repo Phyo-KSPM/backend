@@ -1,27 +1,19 @@
 import { Request, Response } from 'express';
+import { resolveUserId, unauthorizedBody } from '../../../../packages/shared/src/auth/jwt';
 import { ActivitiesService } from '../services/activities.service';
+import { env } from '../config/env';
 
-function resolveUserId(authorization?: string): string {
-  if (!authorization?.startsWith('Bearer ')) return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  const token = authorization.slice(7);
-  const parts = token.split('.');
-  if (parts.length !== 3 || parts[0] !== 'demo') return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  try {
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-    return payload.sub || 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  } catch {
-    return 'b1f2a3c4-d5e6-7890-abcd-ef1234567890';
-  }
-}
+const MAX_LIMIT = 50;
 
 export const ActivitiesController = {
   async list(req: Request, res: Response): Promise<void> {
-    const limit = Number(req.query.limit) || 10;
-    res.json(
-      await ActivitiesService.list(
-        resolveUserId(req.header('authorization') || undefined),
-        limit
-      )
-    );
+    const userId = resolveUserId(req.header('authorization') || undefined, env.jwtSecret);
+    if (!userId) {
+      res.status(401).json(unauthorizedBody);
+      return;
+    }
+    const raw = Number(req.query.limit) || 10;
+    const limit = Math.min(Math.max(raw, 1), MAX_LIMIT);
+    res.json(await ActivitiesService.list(userId, limit));
   },
 };

@@ -247,6 +247,7 @@ export const PaymentsRepository = {
   async findPayment(paymentId: string) {
     const { rows } = await query<{
       payment_id: string;
+      user_id: string;
       batch_id: string | null;
       payment_status: string;
       payment_method: string;
@@ -261,7 +262,7 @@ export const PaymentsRepository = {
       imei2: string | null;
       batch_code: string | null;
     }>(
-      `SELECT p.payment_id, p.batch_id, p.payment_status, p.payment_method, p.gateway_ref,
+      `SELECT p.payment_id, p.user_id, p.batch_id, p.payment_status, p.payment_method, p.gateway_ref,
               p.total_amount, p.paid_at,
               d.brand, d.product_name, d.model_name, d.serial_number, d.imei1, d.imei2,
               b.batch_id AS batch_code
@@ -276,6 +277,7 @@ export const PaymentsRepository = {
     if (!p) return null;
     return {
       paymentId: p.payment_id,
+      userId: p.user_id,
       batchId: p.batch_code,
       status: p.payment_status,
       paymentMethod: p.payment_method,

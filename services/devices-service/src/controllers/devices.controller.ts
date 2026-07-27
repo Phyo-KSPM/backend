@@ -1,17 +1,12 @@
 import { Request, Response } from 'express';
+import { resolveUserId } from '../../../../packages/shared/src/auth/jwt';
 import { DevicesService } from '../services/devices.service';
+import { env } from '../config/env';
 
-function resolveUserId(authorization?: string): string {
-  if (!authorization?.startsWith('Bearer ')) return 'anonymous';
-  const token = authorization.slice(7);
-  const parts = token.split('.');
-  if (parts.length !== 3 || parts[0] !== 'demo') return 'anonymous';
-  try {
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-    return payload.sub || 'anonymous';
-  } catch {
-    return 'anonymous';
-  }
+const MAX_BULK = 20;
+
+function optionalUserId(authorization?: string): string {
+  return resolveUserId(authorization, env.jwtSecret) || 'anonymous';
 }
 
 export const DevicesController = {
@@ -26,7 +21,7 @@ export const DevicesController = {
     }
     const result = await DevicesService.check(
       { imei1, imei2 },
-      resolveUserId(req.header('authorization') || undefined)
+      optionalUserId(req.header('authorization') || undefined)
     );
     if (!result) {
       res.status(404).json({
@@ -47,10 +42,20 @@ export const DevicesController = {
       });
       return;
     }
+    if (imeis.length > MAX_BULK) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `imeis must contain at most ${MAX_BULK} items`,
+        },
+      });
+      return;
+    }
     res.json(
       await DevicesService.bulkCheck(
         { imeis },
-        resolveUserId(req.header('authorization') || undefined)
+        optionalUserId(req.header('authorization') || undefined)
       )
     );
   },

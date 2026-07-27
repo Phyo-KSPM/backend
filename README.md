@@ -51,8 +51,16 @@ Smoke checks:
 - http://localhost:3000/openapi/v1/nrc/townships
 - http://localhost:3001/docs — Swagger UI (Try it out → gateway `:3000`)
 
-Demo login: `maung@dealer.com` / `secret123`  
+Demo login (local seed only — change/disable on production): `maung@dealer.com` / `secret123`  
 Sample IMEI: `359876543210108`
+
+### Security notes
+
+- Access tokens are **HS256 JWTs** (`JWT_SECRET` must be ≥32 chars; production refuses weak defaults).
+- Protected routes return **401** without a valid Bearer token (no demo-user fallback).
+- `payBatch` / tax & payment reads require ownership.
+- Production: set a unique `JWT_SECRET`, keep `SWAGGER_ENABLED=false`, set `CORS_ORIGINS`, firewall ports `3010–3017`.
+- After deploy: `git pull` → set `JWT_SECRET` → `npm install` → `npm run pm2:delete` → `npm run pm2:start`.
 
 ## Infrastructure
 

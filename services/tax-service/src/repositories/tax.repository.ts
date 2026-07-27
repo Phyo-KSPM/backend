@@ -101,11 +101,12 @@ export const TaxRepository = {
   async findById(id: string) {
     const appRes = await query<{
       id: string;
+      user_id: string;
       status: string;
       total_tax: number;
       expires_at: Date;
     }>(
-      `SELECT id, status, total_tax, expires_at FROM tax_applications WHERE id = $1`,
+      `SELECT id, user_id, status, total_tax, expires_at FROM tax_applications WHERE id = $1`,
       [id]
     );
     const app = appRes.rows[0];
@@ -135,6 +136,7 @@ export const TaxRepository = {
 
     return {
       id: app.id,
+      userId: app.user_id,
       status: app.status,
       totalTax: app.total_tax,
       expiresAt: new Date(app.expires_at).toISOString(),

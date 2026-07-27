@@ -5,8 +5,26 @@ dotenv.config(
     : undefined
 );
 
+function parseOrigins(raw?: string): string[] | true {
+  if (!raw || raw.trim() === '' || raw.trim() === '*') {
+    // Dev default: allow all. Production must set CORS_ORIGINS explicitly.
+    if (process.env.NODE_ENV === 'production') {
+      console.warn(
+        '[gateway] CORS_ORIGINS not set in production — defaulting to same-host only (no browser CORS)'
+      );
+      return [];
+    }
+    return true;
+  }
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export const env = {
   port: Number(process.env.GATEWAY_PORT) || 3000,
+  corsOrigins: parseOrigins(process.env.CORS_ORIGINS),
   bffUrl: process.env.BFF_URL || 'http://localhost:3002',
   authServiceUrl: process.env.AUTH_SERVICE_URL || 'http://localhost:3010',
   usersServiceUrl: process.env.USERS_SERVICE_URL || 'http://localhost:3011',

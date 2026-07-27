@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+import { assertJwtSecret } from '../../../../packages/shared/src/auth/jwt';
+
 dotenv.config(
   process.env.DOTENV_CONFIG_PATH
     ? { path: process.env.DOTENV_CONFIG_PATH }
@@ -7,7 +9,7 @@ dotenv.config(
 
 export const env = {
   port: Number(process.env.PAYMENTS_SERVICE_PORT) || 3014,
-  jwtSecret: process.env.JWT_SECRET || 'change-me-in-production',
+  jwtSecret: assertJwtSecret(process.env.JWT_SECRET),
   db: {
     type: process.env.DB_TYPE || 'postgresql',
     url: process.env.DATABASE_URL || '',
