@@ -4,30 +4,52 @@ CEIR mobile API backend — domain services aligned with the ER diagram and publ
 
 **Repository:** https://github.com/Phyo-KSPM/backend.git
 
+## Environment policy
+
+| Environment | Postgres + Redis | App process manager |
+|-------------|------------------|---------------------|
+| **Windows local** | Docker (`npm run docker:infra` / `local:infra`) | PM2 or `dev:all` |
+| **Linux production** (`/opt/ceir/backend`) | **Host packages only — no Docker** | PM2 |
+
+`docker:*` / `local:infra` scripts are for **Windows local development only**.  
+Do **not** run them on Linux production.
+
 ## Guides
 
 | File | Purpose |
 |------|---------|
-| [`project-setup.txt`](./project-setup.txt) | Full prerequisites, step-by-step, PM2, Git clone, troubleshooting |
-| [`project-start.txt`](./project-start.txt) | Short quick-start summary |
+| [`project-setup.txt`](./project-setup.txt) | Full setup (Windows local + Linux production) |
+| [`project-start.txt`](./project-start.txt) | Short quick-start |
 
-## Quick start (recommended: PM2)
+## Quick start — Windows local (Docker)
 
 ```bash
-git clone https://github.com/Phyo-KSPM/backend.git
-cd backend
 npm install
-cp .env.example .env          # Windows: copy .env.example .env
-npm run docker:infra          # Postgres + Redis
-npm run db:setup              # migrate + seed
-npm run pm2:start             # all app services
+copy .env.example .env
+npm run docker:infra          # or: npm run local:infra
+npm run db:setup
+npm run pm2:start
 npm run pm2:status
+```
+
+## Quick start — Linux production (no Docker)
+
+```bash
+# Install host PostgreSQL + Redis first (see project-setup.txt §B)
+cd /opt/ceir/backend
+cp .env.example .env          # edit DATABASE_URL / REDIS_URL for host services
+npm install
+npm run db:setup
+npm run pm2:start
+npm run pm2:status
+npx pm2 save && npx pm2 startup
 ```
 
 Smoke checks:
 
 - http://localhost:3000/health
 - http://localhost:3000/openapi/v1/nrc/townships
+- http://localhost:3001/docs — Swagger UI (Try it out → gateway `:3000`)
 
 Demo login: `maung@dealer.com` / `secret123`  
 Sample IMEI: `359876543210108`
@@ -37,9 +59,10 @@ Sample IMEI: `359876543210108`
 | Component | Port | Notes |
 |-----------|------|--------|
 | api-gateway | 3000 | Public `/openapi/v1` (+ `/api`) |
+| swagger-service | 3001 | Swagger UI at `/docs` |
 | bff | 3002 | Backend-for-frontend |
-| PostgreSQL 16 | 5432 | `app_db` — `database/docker-compose.yml` |
-| Redis 7 | 6379 | `redis/docker-compose.yml` |
+| PostgreSQL | 5432 | Windows: Docker · Linux prod: host `postgresql` |
+| Redis | 6379 | Windows: Docker · Linux prod: host `redis-server` |
 
 ## Domain services
 
@@ -56,100 +79,47 @@ Sample IMEI: `359876543210108`
 
 ## Database & cache
 
-- Migrations: `npm run db:migrate` (`database/migrations/`)
-- Seeds: `npm run db:seed` (`database/seeds/`)
+- Migrations: `npm run db:migrate`
+- Seeds: `npm run db:seed`
 - Both: `npm run db:setup`
 - Parameterized SQL (`$1`, `$2`, …) via `pg`
-- Redis cache: profile, IMEI, NRC townships, payments list, activities
+- Redis cache: profile, IMEI, NRC, payments list, activities
 
 ## Scripts
 
-### Infra
-- `npm run docker:infra` / `docker:infra:down` — Postgres + Redis
-- `npm run docker:db` / `docker:redis` — one stack
-- `npm run docker:up` / `docker:down` — full stack (apps + infra)
-
-### Database
-- `npm run db:migrate`
-- `npm run db:seed`
-- `npm run db:setup`
-
-### App (PM2 — recommended)
-- `npm run pm2:start` — start all services (`ecosystem.config.cjs`)
-- `npm run pm2:status`
-- `npm run pm2:logs`
-- `npm run pm2:restart` / `pm2:reload`
-- `npm run pm2:stop` / `pm2:delete`
-- `npm run pm2:flush`
+### App (PM2)
+- `npm run pm2:start` / `pm2:status` / `pm2:logs` / `pm2:restart` / `pm2:stop` / `pm2:delete`
 
 ### App (foreground)
-- `npm run dev:all` — concurrently (stop with Ctrl+C)
-- `npm run dev:gateway` … `dev:nrc` — single service
+- `npm run dev:all`
+
+### Database
+- `npm run db:migrate` / `db:seed` / `db:setup`
+
+### Docker — Windows local only
+- `npm run docker:infra` / `local:infra` — Postgres + Redis containers
+- `npm run docker:infra:down` / `local:infra:down`
+- `npm run docker:db` / `docker:redis`
+- `npm run docker:up` / `docker:down` — full stack (local optional)
 
 ## Routing
 
-Client → API Gateway `:3000`
-
-- `/openapi/v1/login`, `/auth/*`, `/device/*` → auth-service
-- `/openapi/v1/profile`, `/dealer/*` → users-service
-- `/openapi/v1/imei/*` → devices-service
-- `/openapi/v1/tax/*` → tax-service
-- `/openapi/v1/payments/*` → payments-service
-- `/openapi/v1/claims` → claims-service
-- `/openapi/v1/activities` → activities-service
-- `/openapi/v1/nrc/*` → nrc-service
-- `/api/bff/*` → BFF `:3002`
+Client → API Gateway `:3000` → `/openapi/v1/...` (see `project-setup.txt`)
 
 ## Folders
 
 ```
-database/                 Postgres compose, migrations, seeds
-redis/                    Redis compose
-ecosystem.config.cjs      PM2 process definitions
-logs/                     PM2 logs
-services/                 Microservices
-packages/shared/          DB pool + Redis helpers
-project-setup.txt         Full setup guide
-project-start.txt         Short start guide
+database/                 migrations, seeds (+ compose for Windows local)
+redis/                    compose for Windows local
+ecosystem.config.cjs      PM2 (/opt/ceir/backend on Linux)
+services/
+packages/shared/
+project-setup.txt
+project-start.txt
 ```
-
-## Daily workflow
-
-```bash
-npm run docker:infra
-npm run pm2:start
-npm run pm2:status
-```
-
-Stop:
-
-```bash
-npm run pm2:delete
-npm run docker:infra:down
-```
-
-## Ubuntu deploy (`/opt/ceir/backend`)
-
-Project root on the server should be `/opt/ceir/backend`.
-`ecosystem.config.cjs` resolves that path automatically (or via `CEIR_HOME`).
-
-```bash
-sudo mkdir -p /opt/ceir && sudo chown -R $USER:$USER /opt/ceir
-git clone https://github.com/Phyo-KSPM/backend.git /opt/ceir/backend
-cd /opt/ceir/backend
-cp .env.example .env
-npm install
-npm run docker:infra
-npm run db:setup
-npm run pm2:start
-npm run pm2:status
-npx pm2 save && npx pm2 startup
-```
-
-Logs: `/opt/ceir/backend/logs/`
 
 ## Notes
 
 - Copy `.env.example` → `.env` (never commit `.env`)
-- Do not run `pm2:start` and `dev:all` at the same time (port conflict)
-- First-time / schema change: run `npm run db:setup`
+- Linux production: install PostgreSQL + Redis on the host; point `.env` at `localhost`
+- Do not run `pm2:start` and `dev:all` together (port conflict)

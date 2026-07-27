@@ -3,425 +3,308 @@
   ဖိုင်: project-setup.txt
 ================================================================================
 
-ဤဖိုင်က project ကို မ run ခင် ဘာတွေ ပြင်ရမလဲ၊ ပြီးရင် အဆင့်လိုက်
-ဘယ်လို start / stop လုပ်ရမလဲ ဆိုတာကို အသေးစိတ် ရှင်းပြထားပါတယ်။
-
-အမြန်အတိုချုပ်လိုရင်: project-start.txt
+ဤဖိုင်က project ကို မ run ခင် / စတင်ပုံကို အသေးစိတ် ရှင်းပြသည်။
+အမြန်အတိုချုပ်: project-start.txt
 GitHub: https://github.com/Phyo-KSPM/backend.git
 
 
 ################################################################################
-  အပိုင်း A — Project မ run ခင် ပြင်ဆင်ရမယ့် အရာများ (Pre-flight)
+  ပတ်ဝန်းကျင် မူဝါဒ (အရေးကြီး)
+################################################################################
+
+  Windows local (dev)
+    → PostgreSQL + Redis = Docker
+    → npm run docker:infra   (သို့ npm run local:infra)
+    → App = PM2 သို့ npm run dev:all
+
+  Linux production (/opt/ceir/backend)
+    → PostgreSQL + Redis = host ပေါ် တိုက်ရိုက် တပ် (apt/system packages)
+    → Docker / docker:infra = မသုံးရ
+    → App = PM2 သာ
+
+  package.json ထဲ docker:* နှင့် local:infra* scripts များသည်
+  Windows local အတွက်သာ ဖြစ်သည်။
+
+
+################################################################################
+  အပိုင်း A — Windows local (Docker သုံး)
 ################################################################################
 
 
 --------------------------------------------------------------------------------
-A1. Software များ အရင် install / ဖွင့်ထားရမယ်
+A1. လိုအပ်သော software
 --------------------------------------------------------------------------------
 
-  [ ] 1. Node.js 20 သို့မဟုတ် အထက်
-        - စစ်ရန်:  node -v
-        - စစ်ရန်:  npm -v
-        - မရှိရင်: https://nodejs.org မှ LTS version download
-
-  [ ] 2. Docker Desktop (Windows)
-        - Postgres + Redis အတွက် မရှိမဖြစ်
-        - Install ပြီးနောက် Docker Desktop ကို ဖွင့်ထားရမယ်
-        - စစ်ရန်:  docker -v
-        - စစ်ရန်:  docker compose version
-        - Desktop UI မှာ status က Running / Engine running ဖြစ်နေရမယ်
-
-  [ ] 3. Git (clone လုပ်မယ်ဆို)
-        - စစ်ရန်:  git --version
-
-  [ ] 4. Terminal (PowerShell သို့ Command Prompt)
-        - project folder ထဲ cd ဝင်နိုင်ရမယ်
-
-  [ ] 5. (Optional) API client
-        - Browser, Postman, Insomnia, သို့ PowerShell Invoke-RestMethod
-
-  မှတ်ချက်:
-    - PM2 က npm install လုပ်ရင် project ထဲ အလိုအလျောက် ပါလာမယ်
-      (global install မလို)
+  [ ] Node.js 20+
+  [ ] Docker Desktop (Running)
+  [ ] Git (optional)
+  [ ] PowerShell / CMD
 
 
 --------------------------------------------------------------------------------
-A2. Project folder သို့ သွားပါ
+A2. Folder + install + .env
 --------------------------------------------------------------------------------
 
-  Local ရှိပြီးသား:
+  cd C:\Users\rnd\Desktop\project-setup\backend
+  npm install
+  copy .env.example .env
 
-    cd C:\Users\rnd\Desktop\project-setup\backend
-
-  Git ကနေ clone:
-
-    git clone https://github.com/Phyo-KSPM/backend.git
-    cd backend
-
-  မှန်/မမှန် စစ်ရန် — ဤဖိုင်များ ရှိရမယ်:
-
-    package.json
-    ecosystem.config.cjs
-    docker-compose.yml
-    docker-compose.infra.yml
-    database\
-    redis\
-    services\
-    .env.example
-    project-setup.txt
-    project-start.txt
-
-
---------------------------------------------------------------------------------
-A3. Dependencies install
---------------------------------------------------------------------------------
-
-  ပထမဆုံးတစ်ခါ (သို့) package.json ပြောင်းပြီးတိုင်း:
-
-    npm install
-
-  အောင်မြင်ရင် node_modules\ folder ပေါ်လာမယ်။
-  (pm2, tsx, express, pg, ioredis စသည် ပါမယ်)
-
-
---------------------------------------------------------------------------------
-A4. Environment file (.env) ပြင်ဆင်ခြင်း
---------------------------------------------------------------------------------
-
-  [ ] .env ရှိ/မရှိ စစ်ပါ
-
-    မရှိရင်:
-
-      copy .env.example .env
-
-    PowerShell:
-
-      Copy-Item .env.example .env
-
-  [ ] .env ထဲ အရေးကြီးသော တန်ဖိုးများ (local default):
+  .env (local Docker default):
 
     DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_db
-    DB_HOST=localhost
-    DB_PORT=5432
-    DB_USER=postgres
-    DB_PASS=postgres
-    DB_DATABASE=app_db
-
     REDIS_URL=redis://localhost:6379
-    REDIS_HOST=localhost
-    REDIS_PORT=6379
-
     JWT_SECRET=change-me-in-production
 
-  မှတ်ချက်:
-    - .env က git မတင်ပါ (.gitignore)
-    - Local app က localhost ကို သုံးသည်
-    - Docker app containers က host အမည် postgres / redis ကို သုံးသည်
-
 
 --------------------------------------------------------------------------------
-A5. Port များ အလွတ်ဖြစ်အောင် စစ်ပါ
+A3. Infra စတင် (Docker — Windows only)
 --------------------------------------------------------------------------------
 
-  အသုံးပြုမယ့် ports:
-
-    5432        PostgreSQL
-    6379        Redis
-    3000        API Gateway
-    3002        BFF
-    3010–3017   Domain services
-
-  တစ်ခုခု ပိတ်နေရင်:
-
-    docker ps
-    npm run pm2:status
-    netstat -ano | findstr ":3000"
-
-  လိုအပ်ရင် အဲ့ process/container ကို ရပ်ပါ။
-
-
---------------------------------------------------------------------------------
-A6. Pre-flight checklist (run မလုပ်ခင် အတိုချုပ်)
---------------------------------------------------------------------------------
-
-  [ ] Docker Desktop Running
-  [ ] node -v / npm -v အဆင်ပြေ
-  [ ] backend folder ရောက်ပြီး
-  [ ] npm install ပြီး
-  [ ] .env ရှိပြီး DATABASE_URL / REDIS_URL မှန်
-  [ ] Port 5432, 6379, 3000 က အဓိက အလွတ်
-  [ ] ecosystem.config.cjs ရှိ
-
-
-################################################################################
-  အပိုင်း B — အဆင့်လိုက် Start လုပ်နည်း (Step by step)
-################################################################################
-
-
---------------------------------------------------------------------------------
-STEP 1 — Docker Desktop ဖွင့်ပါ
---------------------------------------------------------------------------------
-
-  1. Start Menu မှ Docker Desktop ဖွင့်
-  2. Engine ready ဖြစ်သည်အထိ စောင့်
-  3. စစ်ရန်:
-
-       docker info
-
-     Error မထွက်ရင် OK
-
-
---------------------------------------------------------------------------------
-STEP 2 — Postgres + Redis (Infrastructure) စတင်ပါ
---------------------------------------------------------------------------------
-
-  backend folder ထဲမှာ:
+  Docker Desktop Ready ဖြစ်မှ:
 
     npm run docker:infra
 
-  ဘာဖြစ်မလဲ:
-    - ceir-postgres container စမယ် (:5432)
-    - ceir-redis container စမယ် (:6379)
-    - network ceir-net သုံးမယ်
+  (alias) npm run local:infra
 
-  စစ်ဆေးရန်:
+  စစ်ရန်:
 
     docker ps --filter "name=ceir-"
 
-  Status မှာ (healthy) ဖြစ်သည်အထိ စောင့်ပါ။
+  (healthy) ဖြစ်သည်အထိ စောင့်
 
-  သီးသန့် စချင်ရင်:
-
-    npm run docker:db
-    npm run docker:redis
-
-  ရပ်ချင်ရင်:
+  ရပ်ရန်:
 
     npm run docker:infra:down
 
 
 --------------------------------------------------------------------------------
-STEP 3 — Database migrate + seed
+A4. Migrate + seed
 --------------------------------------------------------------------------------
-
-  Tables မရှိသေးရင် / ပထမဆုံး setup ဆိုရင် မဖြစ်မနေ လုပ်ပါ။
-
-  တစ်ခါတည်း:
 
     npm run db:setup
 
-  သို့မဟုတ် ခွဲလုပ်:
-
-    npm run db:migrate    → schema / tables / enums ဖန်တီး
-    npm run db:seed       → demo data ထည့်
-
-  SQL ဖိုင်များ:
-
-    database\migrations\001_init_schema.sql
-    database\seeds\001_seed.sql
-
-  အောင်မြင်ရင် terminal မှာ တွေ့ရမယ်:
-
-    [migrate] applied 001_init_schema.sql
-    [migrate] done
-    [seed] applied 001_seed.sql
-    [seed] done
-
-  Seed ထဲပါမယ့် demo data (အဓိက):
-
-    - User: maung@dealer.com / secret123
-    - Devices: IMEI 359876543210108 စသည်
-    - NRC regions / townships
-    - Sample activities
-
 
 --------------------------------------------------------------------------------
-STEP 4 — Application services စတင်ပါ (PM2 အကြံပြု)
+A5. App စတင် (PM2)
 --------------------------------------------------------------------------------
-
-  Infra healthy + migrate/seed ပြီးမှသာ လုပ်ပါ။
-
-  ★ အကြံပြုနည်း — PM2 (background, auto-restart):
 
     npm run pm2:start
-
-  စစ်ရန်:
-
     npm run pm2:status
 
-  Status က online ဖြစ်နေရမယ် (service ၁၀ ခု)။
+  Foreground debug:
 
-  Log ကြည့်ရန်:
-
-    npm run pm2:logs
-
-  Config ဖိုင်: ecosystem.config.cjs
-  Log ဖိုင်များ: logs\<service>-out.log / logs\<service>-error.log
-
-  ---- PM2 command အပြည့် ----
-
-    npm run pm2:start      → စတင်
-    npm run pm2:status     → စာရင်း / online|errored
-    npm run pm2:logs       → live logs
-    npm run pm2:restart    → အားလုံး restart
-    npm run pm2:reload     → zero-downtime reload (ဖြစ်နိုင်ရင်)
-    npm run pm2:stop       → ရပ် (list မှာ ကျန်)
-    npm run pm2:delete     → process list ကနေ ဖျက်
-    npm run pm2:flush      → log ရှင်း
-
-  ---- အခြားနည်း — foreground (dev:all) ----
-
-    npm run pm2:delete     (PM2 နဲ့ တပြိုင်နက် မစပါနှင့်)
+    npm run pm2:delete
     npm run dev:all
 
-  Terminal ထဲ log တိုက်ရိုက်မြင်ရမယ်။ ရပ်ရန် Ctrl+C။
 
-  စတင်မယ့် services:
+--------------------------------------------------------------------------------
+A6. Smoke test
+--------------------------------------------------------------------------------
 
-    Name                 Port    Role
-    -------------------  ------  ----------------------------------
-    api-gateway          3000    Public API entry
-    bff                  3002    Backend-for-frontend
-    auth-service         3010    Login / refresh / device binding
-    users-service        3011    Profile / dealer verify
-    devices-service      3012    IMEI check
-    tax-service          3013    Tax applications
-    payments-service     3014    Payments / batches
-    claims-service       3015    Device claims
-    activities-service   3016    Recent activities
-    nrc-service          3017    NRC townships
+    http://localhost:3000/health
+    http://localhost:3000/openapi/v1/nrc/townships
+
+  Login: maung@dealer.com / secret123
+  IMEI:  359876543210108
 
 
 --------------------------------------------------------------------------------
-STEP 5 — အလုပ်လုပ်/မလုပ် စစ်ဆေးပါ (Smoke test)
+A7. Windows နေ့စဉ်
 --------------------------------------------------------------------------------
-
-  5.1 Health
-
-      http://localhost:3000/health
-
-  5.2 NRC (public, login မလို)
-
-      GET http://localhost:3000/openapi/v1/nrc/townships
-
-  5.3 Login
-
-      POST http://localhost:3000/openapi/v1/login
-      Content-Type: application/json
-
-      {
-        "email": "maung@dealer.com",
-        "password": "secret123",
-        "deviceFingerprint": "fp_test_device_001",
-        "deviceName": "Samsung Galaxy A16",
-        "platform": "android",
-        "appVersion": "1.0.0"
-      }
-
-    PowerShell:
-
-      Invoke-RestMethod -Method POST `
-        -Uri http://localhost:3000/openapi/v1/login `
-        -ContentType "application/json" `
-        -Body '{"email":"maung@dealer.com","password":"secret123","deviceFingerprint":"fp_test_device_001","platform":"android"}'
-
-  5.4 IMEI check
-
-      POST http://localhost:3000/openapi/v1/imei/check
-
-      {
-        "imei1": "359876543210108"
-      }
-
-  အောင်မြင်ရင် accessToken / device data / regions ပြန်လာမယ်။
-
-
---------------------------------------------------------------------------------
-STEP 6 — အလုပ်ပြီးရင် ရပ်နည်း
---------------------------------------------------------------------------------
-
-  A) PM2 သုံးထားရင်:
-       npm run pm2:stop
-       (လုံးဝ ဖျက်ချင်ရင်) npm run pm2:delete
-
-  B) npm run dev:all သုံးထားရင်:
-       Terminal မှာ Ctrl + C
-
-  C) Infra (လိုမှ):
-       npm run docker:infra:down
-
-
-################################################################################
-  အပိုင်း C — နေ့စဉ် အသုံးပြုပုံ (Daily workflow)
-################################################################################
-
-  ပထမဆုံးနေ့ / machine အသစ်:
 
     1. Docker Desktop ဖွင့်
-    2. cd backend
-    3. npm install
-    4. copy .env.example .env   (မရှိသေးရင်)
-    5. npm run docker:infra
-    6. npm run db:setup
-    7. npm run pm2:start
-    8. npm run pm2:status
+    2. npm run docker:infra
+    3. npm run pm2:start
+    4. npm run pm2:status
 
-  နောက်နေ့များ (schema မပြောင်းရင်):
+  ရပ်:
 
-    1. Docker Desktop ဖွင့်
-    2. cd backend
-    3. npm run docker:infra
-    4. npm run pm2:start
-    5. npm run pm2:status
+    npm run pm2:delete
+    npm run docker:infra:down
+
+
+--------------------------------------------------------------------------------
+A8. Windows — Docker scripts (package.json)
+--------------------------------------------------------------------------------
+
+  npm run docker:infra / local:infra       Postgres + Redis containers
+  npm run docker:infra:down / local:infra:down
+  npm run docker:db / docker:redis
+  npm run docker:up / docker:down          full stack (optional)
 
 
 ################################################################################
-  အပိုင်း D — Docker full stack (အခြားနည်း)
+  အပိုင်း B — Linux production (/opt/ceir/backend) — Docker မသုံး
 ################################################################################
 
-  App + Postgres + Redis အားလုံး Docker ထဲမှာ:
 
-    npm run docker:up
+--------------------------------------------------------------------------------
+B1. လိုအပ်သော software (host)
+--------------------------------------------------------------------------------
 
-  ရပ်ရန်:
+  [ ] Node.js 20+
+  [ ] PostgreSQL (apt)
+  [ ] Redis (apt)
+  [ ] Git
+  [ ] ★ Docker မလို / မသုံး
 
-    npm run docker:down
 
-  မှတ်ချက်:
-    Local / debug အတွက် အကြံပြုနည်း —
-    infra Docker + app PM2 (npm run pm2:start)
+--------------------------------------------------------------------------------
+B2. Host PostgreSQL + Redis တပ်ခြင်း (ဥပမာ Ubuntu)
+--------------------------------------------------------------------------------
+
+  sudo apt update
+  sudo apt install -y postgresql postgresql-contrib redis-server
+
+  sudo systemctl enable --now postgresql
+  sudo systemctl enable --now redis-server
+
+  # DB + user ဥပမာ
+  sudo -u postgres psql -c "CREATE USER ceir WITH PASSWORD 'your_strong_password';"
+  sudo -u postgres psql -c "CREATE DATABASE app_db OWNER ceir;"
+  sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE app_db TO ceir;"
+
+  Redis စစ်ရန်:
+
+    redis-cli ping
+    # PONG
+
+
+--------------------------------------------------------------------------------
+B3. Project clone + .env
+--------------------------------------------------------------------------------
+
+  sudo mkdir -p /opt/ceir
+  sudo chown -R $USER:$USER /opt/ceir
+  cd /opt/ceir
+  git clone https://github.com/Phyo-KSPM/backend.git backend
+  cd /opt/ceir/backend
+
+  cp .env.example .env
+  nano .env
+
+  .env ဥပမာ (host services):
+
+    DATABASE_URL=postgresql://ceir:your_strong_password@localhost:5432/app_db
+    DB_HOST=localhost
+    DB_PORT=5432
+    DB_USER=ceir
+    DB_PASS=your_strong_password
+    DB_DATABASE=app_db
+    REDIS_URL=redis://localhost:6379
+    JWT_SECRET=change-me-in-production
+
+  ★ npm run docker:infra   မလုပ်ရ
+  ★ npm run docker:*       မလုပ်ရ
+
+
+--------------------------------------------------------------------------------
+B4. Install + migrate + PM2
+--------------------------------------------------------------------------------
+
+  npm install
+  npm run db:setup
+  npm run pm2:start
+  npm run pm2:status
+
+  Reboot ပြီး auto-start (optional):
+
+    npx pm2 save
+    npx pm2 startup
+
+
+--------------------------------------------------------------------------------
+B5. Linux နေ့စဉ်
+--------------------------------------------------------------------------------
+
+  # Postgres/Redis က systemctl နဲ့ အလိုအလျောက် စနေမယ် (enable ထားရင်)
+
+  cd /opt/ceir/backend
+  npm run pm2:start
+  npm run pm2:status
+
+  Update:
+
+    cd /opt/ceir/backend
+    git pull
+    npm install
+    npm run db:setup
+    npm run pm2:delete
+    npm run pm2:start
+
+
+--------------------------------------------------------------------------------
+B6. ecosystem path
+--------------------------------------------------------------------------------
+
+  Production root: /opt/ceir/backend
+
+  resolve အစဉ်:
+    1) CEIR_HOME
+    2) /opt/ceir/backend/package.json ရှိရင် → /opt/ceir/backend
+    3) __dirname
+
+  Logs: /opt/ceir/backend/logs/
+
+
+################################################################################
+  အပိုင်း C — PM2 commands (Windows + Linux တူ)
+################################################################################
+
+  npm run pm2:start
+  npm run pm2:status
+  npm run pm2:logs
+  npm run pm2:restart
+  npm run pm2:reload
+  npm run pm2:stop
+  npm run pm2:delete
+  npm run pm2:flush
+
+  Config: ecosystem.config.cjs
+
+
+################################################################################
+  အပိုင်း D — Services / Ports
+################################################################################
+
+  api-gateway          3000
+  bff                  3002
+  auth-service         3010
+  users-service        3011
+  devices-service      3012
+  tax-service          3013
+  payments-service     3014
+  claims-service       3015
+  activities-service   3016
+  nrc-service          3017
+  postgres             5432
+  redis                6379
 
 
 ################################################################################
   အပိုင်း E — API အကျဉ်း
 ################################################################################
 
-  Base URL:
+  Base: http://localhost:3000/openapi/v1
 
-    http://localhost:3000/openapi/v1
-
-  (legacy: /api/... လည်း proxy လုပ်ပါတယ်)
-
-  အဓိက paths:
-
-    POST   /login
-    POST   /auth/refresh
-    GET    /device/binding
-    POST   /device/bind
-    GET    /profile
-    POST   /dealer/verify
-    POST   /imei/check
-    POST   /imei/bulk-check
-    POST   /tax/applications
-    GET    /tax/applications/{id}
-    POST   /payments/batches
-    POST   /payments/batches/{id}/pay
-    GET    /payments
-    GET    /payments/{id}
-    POST   /claims
-    GET    /claims
-    GET    /activities
-    GET    /nrc/townships
+  POST /login
+  POST /auth/refresh
+  GET  /device/binding
+  POST /device/bind
+  GET  /profile
+  POST /dealer/verify
+  POST /imei/check
+  POST /imei/bulk-check
+  POST /tax/applications
+  GET  /tax/applications/{id}
+  POST /payments/batches
+  POST /payments/batches/{id}/pay
+  GET  /payments
+  GET  /payments/{id}
+  POST /claims
+  GET  /claims
+  GET  /activities
+  GET  /nrc/townships
 
 
 ################################################################################
@@ -437,92 +320,49 @@ STEP 6 — အလုပ်ပြီးရင် ရပ်နည်း
   အပိုင်း G — Troubleshooting
 ################################################################################
 
-  Docker daemon is not running
-    → Docker Desktop ဖွင့်ပြီး Ready ဖြစ်အောင် စောင့်
+  Windows: Docker daemon is not running
+    → Docker Desktop ဖွင့်
+
+  Linux: connection refused :5432 / :6379
+    → sudo systemctl status postgresql
+    → sudo systemctl status redis-server
+    → .env DATABASE_URL / REDIS_URL စစ်
+
+  Linux မှာ docker:infra error
+    → Production မှာ Docker မသုံးရ — host Postgres/Redis သုံးပါ
 
   Port already in use
-    → 5432 / 6379 / 3000–3017 ကို ယူထားတဲ့ process/container ရပ်
-    → npm run pm2:status / docker ps ကြည့်
-    → npm run pm2:delete  သို့  docker stop <name>
-
-  PM2 status = errored / stopped
-    → npm run pm2:logs
-    → logs\*-error.log ဖတ်
-    → Postgres/Redis healthy ဖြစ်/မဖြစ် စစ်
-    → npm run pm2:delete ပြီး npm run pm2:start ပြန်စ
-
-  DATABASE_URL connection failed / [db] error
-    → npm run docker:infra
-    → ceir-postgres healthy ဖြစ်မှ app ပြန်စ
-    → .env ထဲ DATABASE_URL မှန်/မမှန် စစ်
-
-  Redis connection failed
-    → ceir-redis healthy ဖြစ်/မဖြစ် စစ်
-    → REDIS_URL=redis://localhost:6379
+    → pm2:status / (Windows) docker ps
 
   relation "users" does not exist
-    → npm run db:setup ပြန်လုပ်
+    → npm run db:setup
 
-  Login 401 INVALID_CREDENTIALS
-    → email/password မှန်အောင် ရိုက်
-    → npm run db:seed ပြန်လုပ်
+  Login 401
+    → seed + demo password စစ်
 
-  ACCOUNT_BOUND_TO_OTHER_DEVICE (403)
-    → တူညီတဲ့ deviceFingerprint ပြန်သုံး
-    → သို့မဟုတ် DB ထဲ user_device_bindings row ကို ဖျက်
+  ACCOUNT_BOUND_TO_OTHER_DEVICE
+    → တူညီသော deviceFingerprint သုံး
 
 
 ################################################################################
-  အပိုင်း H — Folder အကျဉ်း
+  အပိုင်း H — Folder
 ################################################################################
 
-  database\                   Postgres compose + migrations + seeds
-  redis\                      Redis compose
-  docker-compose.yml          Full stack (apps + infra)
-  docker-compose.infra.yml    Postgres + Redis only
-  ecosystem.config.cjs        PM2 process list
-  logs\                       PM2 out/error logs
-  services\                   Microservices source
-  packages\shared\            Shared DB/Redis helpers
-  .env                        Local environment (git မတင်)
-  .env.example                Env template (git တင်ထား)
-  project-setup.txt           ဤလမ်းညွှန်ဖိုင်
-  project-start.txt           အမြန် start အတိုချုပ်
-  README.md                   Repo overview
+  database\                 migrations/seeds + compose (Windows local)
+  redis\                    compose (Windows local)
+  docker-compose*.yml       Windows local only
+  ecosystem.config.cjs      PM2
+  services\
+  packages\shared\
+  .env / .env.example
+  project-setup.txt / project-start.txt / README.md
 
 
 ################################################################################
-  အပိုင်း I — Git မှ clone လုပ်ပြီး ပြန်သုံးပုံ
+  အပိုင်း I — Git clone
 ################################################################################
 
-  Remote:
-
-    https://github.com/Phyo-KSPM/backend.git
-
-
---------------------------------------------------------------------------------
-I1. Clone
---------------------------------------------------------------------------------
-
-    git clone https://github.com/Phyo-KSPM/backend.git
-    cd backend
-
-
---------------------------------------------------------------------------------
-I2. Setup + Start (PM2)
---------------------------------------------------------------------------------
-
-    npm install
-    copy .env.example .env
-    npm run docker:infra
-    npm run db:setup
-    npm run pm2:start
-    npm run pm2:status
-
-
---------------------------------------------------------------------------------
-I3. Clone အမြန် copy-paste
---------------------------------------------------------------------------------
+  Windows local:
 
     git clone https://github.com/Phyo-KSPM/backend.git
     cd backend
@@ -532,140 +372,40 @@ I3. Clone အမြန် copy-paste
     npm run db:setup
     npm run pm2:start
 
-  ပြီးရင်:
+  Linux production:
 
-    http://localhost:3000/health
-    http://localhost:3000/openapi/v1/nrc/townships
-    npm run pm2:status
-
-
---------------------------------------------------------------------------------
-I4. Update ဆွဲယူခြင်း
---------------------------------------------------------------------------------
-
-    cd backend
-    git pull
+    git clone https://github.com/Phyo-KSPM/backend.git /opt/ceir/backend
+    cd /opt/ceir/backend
+    cp .env.example .env
+    # edit .env for host Postgres/Redis
     npm install
-    npm run docker:infra
     npm run db:setup
-    npm run pm2:delete
     npm run pm2:start
-
-  မှတ်ချက်:
-    - .env က local မှာသာ ရှိမယ် — မဖျက်ပါနှင့်
-    - schema မပြောင်းရင် db:migrate ပဲ လုပ်လို့ရ
-
-
---------------------------------------------------------------------------------
-I5. Git မှာ ဘာတွေ တင်ထား / မတင်ထား
---------------------------------------------------------------------------------
-
-  တင်ထား:
-    - source, docker compose, migrations, seeds
-    - ecosystem.config.cjs
-    - .env.example, README, project-setup.txt, project-start.txt
-
-  မတင်ထား:
-    - .env
-    - node_modules/
-    - dist/
-    - logs/* (except .gitkeep)
+    # docker:infra မလုပ်
 
 
 ################################################################################
-  အပိုင်း J — Ubuntu deploy (/opt/ceir/backend) + PM2
+  အမြန် copy-paste
 ################################################################################
 
-  Production folder:
-
-    /opt/ceir/backend
-
-  ecosystem.config.cjs က အောက်ပါအတိုင်း root ကို ရွေးသည်:
-
-    1) CEIR_HOME env ရှိရင် အဲ့ path
-    2) /opt/ceir/backend/package.json ရှိရင် → /opt/ceir/backend
-    3) မဟုတ်ရင် → config ဖိုင်ရှိရာ folder (__dirname)
-
-
---------------------------------------------------------------------------------
-J1. Ubuntu ပေါ် ပထမဆုံး တင်သုံးပုံ
---------------------------------------------------------------------------------
-
-  sudo mkdir -p /opt/ceir
-  sudo chown -R $USER:$USER /opt/ceir
-  cd /opt/ceir
-  git clone https://github.com/Phyo-KSPM/backend.git backend
-  cd /opt/ceir/backend
-
-  cp .env.example .env
-  nano .env
-  # DATABASE_URL / REDIS_URL ကို server အမှန်နဲ့ ကိုက်အောင် ပြင်
-
-  npm install
-  npm run docker:infra        # သို့ host Postgres/Redis သုံးရင် ကျော်
-  npm run db:setup
-
-  npm run pm2:start
-  npm run pm2:status
-
-  # optional — reboot ပြီး auto start
-  npx pm2 save
-  npx pm2 startup
-
-
---------------------------------------------------------------------------------
-J2. /opt/ceir/backend မှာ အရေးကြီးသော path များ
---------------------------------------------------------------------------------
-
-  /opt/ceir/backend/ecosystem.config.cjs
-  /opt/ceir/backend/.env
-  /opt/ceir/backend/services/...
-  /opt/ceir/backend/logs/<service>-out.log
-  /opt/ceir/backend/logs/<service>-error.log
-
-  cwd / script / logs အားလုံး /opt/ceir/backend အောက်ကို ညွှန်းထားသည်။
-
-
---------------------------------------------------------------------------------
-J3. CEIR_HOME override (လိုမှ)
---------------------------------------------------------------------------------
-
-  CEIR_HOME=/opt/ceir/backend npm run pm2:start
-
-  (သို့) export CEIR_HOME=/opt/ceir/backend
-
-
-################################################################################
-  အမြန်လမ်းညွှန် (Quick copy-paste)
-################################################################################
-
-  --- Local folder ရှိပြီးသား ---
+  --- Windows local ---
 
     cd C:\Users\rnd\Desktop\project-setup\backend
     npm install
     npm run docker:infra
     npm run db:setup
     npm run pm2:start
-    npm run pm2:status
 
-  --- Git clone ---
+  --- Linux production ---
 
-    git clone https://github.com/Phyo-KSPM/backend.git
-    cd backend
+    cd /opt/ceir/backend
     npm install
-    copy .env.example .env
-    npm run docker:infra
     npm run db:setup
     npm run pm2:start
 
-  --- ရပ်ရန် ---
-
-    npm run pm2:delete
-    npm run docker:infra:down
-
 ================================================================================
-  အဆင့်အစဉ် အတိုချုပ်
+  အတိုချုပ်
 
-    မ run ခင်  →  Node + Docker + npm install + .env
-    ပြီးမှ     →  docker:infra → db:setup → pm2:start → pm2:status → smoke test
+    Windows  → Docker infra → db:setup → pm2:start
+    Linux    → host Postgres/Redis → db:setup → pm2:start  (no Docker)
 ================================================================================

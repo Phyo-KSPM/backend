@@ -66,6 +66,7 @@ module.exports = {
   apps: [
     app('api-gateway', 'services/api-gateway/src/index.ts'),
     app('bff', 'services/bff/src/index.ts'),
+    app('swagger-service', 'services/swagger-service/src/index.ts'),
     app('auth-service', 'services/auth-service/src/index.ts'),
     app('users-service', 'services/users-service/src/index.ts'),
     app('devices-service', 'services/devices-service/src/index.ts'),

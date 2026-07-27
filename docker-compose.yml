@@ -1,3 +1,4 @@
+# Windows local optional full stack. Linux production: do not use Docker.
 services:
   api-gateway:
     image: node:20-alpine

@@ -1,4 +1,5 @@
-# Postgres + Redis only (no app services)
+# Windows local only — Postgres + Redis (no app services).
+# Linux production: use host PostgreSQL + Redis; do not run this file.
 include:
   - path: ./database/docker-compose.yml
   - path: ./redis/docker-compose.yml

@@ -1,3 +1,4 @@
+# Windows local only. Linux production: host PostgreSQL (no Docker).
 services:
   postgres:
     image: postgres:16-alpine
