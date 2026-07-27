@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { rateLimit } from '../../../../packages/shared/src/auth/rate-limit';
+import { rateLimit } from '../../../packages/shared/src/auth/rate-limit';
 import { env } from './config/env';
 import { connectInfra } from './config/database';
 import { AuthController } from './controllers/auth.controller';
