@@ -251,6 +251,75 @@ B6. ecosystem path
 
 
 ################################################################################
+  အပိုင်း B7 — Production security checklist (မဖြစ်မနေ)
+################################################################################
+
+  Code မှာ ပါပြီးသား (HS256 JWT, 401 without token, ownership checks,
+  weak JWT_SECRET boot-fail, Swagger prod default off, login rate limit)။
+  Server / ops ဘက်မှာ အောက်ပါကို စစ်ပါ။
+
+  ---------- ချက်ချင်း (deploy တိုင်း) ----------
+
+  [ ] 1. api-gateway (:3000) နှင့် bff (:3002) PM2 မှာ online + တည်ငြိမ်
+        curl -s http://localhost:3000/health
+        curl -s http://localhost:3002/health
+        curl -s https://service.ceir.gov.mm/health
+
+  [ ] 2. JWT_SECRET — အားကောင်း (≥32 chars), environment တစ်ခုချင်း သီးသန့်
+        node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+        # .env ထဲ ထည့် — change-me-in-production / short secret မထားရ
+        # Production မှာ NODE_ENV=production → weak secret ဖြင့် service မစရ
+
+  [ ] 3. SWAGGER_ENABLED=false  (production)
+        # လိုမှ trusted network မှာ SWAGGER_ENABLED=true ယာယီဖွင့်
+        # Public: https://service.ceir.gov.mm/docs မဖွင့်ရန်
+
+  [ ] 4. Demo account — production မှာ မသုံးရ / password ပြောင်း
+        # Seed: maung@dealer.com / secret123  (local သာ)
+        # Prod: password rotate သို့ user disable/delete
+
+  [ ] 5. Firewall — public ဖွင့်ရမည့် ports
+        ခွင့်:  22 (SSH), 80/443 (nginx → gateway :3000)
+        ပိတ်:  3001 (swagger), 3002 (bff), 3010–3017 (domain),
+              5432 (Postgres), 6379 (Redis)
+        # Domain services / DB / Redis = localhost သို့ private net သာ
+
+
+  ---------- မြင့် (နောက်ထပ်) ----------
+
+  [ ] 6. Postgres — default postgres/postgres မထား၊ ခိုင်မာသော password
+  [ ] 7. Redis — requirepass + bind 127.0.0.1 (သို့ private)
+  [ ] 8. CORS_ORIGINS — browser/app origin allowlist
+        ဥပမာ: CORS_ORIGINS=https://service.ceir.gov.mm,https://app.ceir.gov.mm
+  [ ] 9. PM2 ကို root မဟုတ် non-root user ဖြင့် run (least privilege)
+  [ ] 10. payBatch = simulate သာ — real MPU/KBZ/Wave webhook မထည့်မချင်း
+         production fiscal confirmation အဖြစ် မယူရ
+  [ ] 11. Dealer verify = local match သာ — IRD integration အစစ် လိုအပ်သေး
+  [ ] 12. Device fingerprint ကို mutating API များမှာပါ enforce (login သာမဟုတ်)
+
+
+  ---------- အလယ် / နိမ့် ----------
+
+  [ ] 13. helmet / security headers (gateway)
+  [ ] 14. Gateway-level rate limit (login + IMEI)
+  [ ] 15. Claim document URL allowlist / controlled upload
+  [ ] 16. Audit log (failed login, pay, verify)
+  [ ] 17. npm audit + dependency updates
+  [ ] 18. Secrets manager (prod မှာ .env file သက်သက် မထား)
+
+
+  ---------- Deploy ပြီး smoke (auth) ----------
+
+    # Token မပါ → 401 ဖြစ်ရမယ်
+    curl -i https://service.ceir.gov.mm/openapi/v1/profile
+
+    # Login → accessToken ရမှ profile ခေါ်
+    curl -s -X POST https://service.ceir.gov.mm/openapi/v1/login \
+      -H "Content-Type: application/json" \
+      -d '{"email":"...","password":"...","deviceFingerprint":"..."}'
+
+
+################################################################################
   အပိုင်း C — PM2 commands (Windows + Linux တူ)
 ################################################################################
 
@@ -311,12 +380,15 @@ B6. ecosystem path
 
 
 ################################################################################
-  အပိုင်း F — Demo credentials
+  အပိုင်း F — Demo credentials (local / seed သာ)
 ################################################################################
 
   Email:       maung@dealer.com
   Password:    secret123
   Sample IMEI: 359876543210108
+
+  ★ Production မှာ ဤ password မထားရ — B7 checklist §4 ကြည့်
+  ★ Swagger / README တွင် demo hint မဖော်ပြရန် (SWAGGER_DEMO_HINTS=false)
 
 
 ################################################################################

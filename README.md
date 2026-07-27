@@ -56,11 +56,20 @@ Sample IMEI: `359876543210108`
 
 ### Security notes
 
-- Access tokens are **HS256 JWTs** (`JWT_SECRET` must be ≥32 chars; production refuses weak defaults).
-- Protected routes return **401** without a valid Bearer token (no demo-user fallback).
-- `payBatch` / tax & payment reads require ownership.
-- Production: set a unique `JWT_SECRET`, keep `SWAGGER_ENABLED=false`, set `CORS_ORIGINS`, firewall ports `3010–3017`.
-- After deploy: `git pull` → set `JWT_SECRET` → `npm install` → `npm run pm2:delete` → `npm run pm2:start`.
+Already in code: HS256 JWT + expiry, 401 without token, ownership on pay/tax/payments,
+weak-secret boot fail, Swagger off by default in production, login rate limit.
+
+**Production checklist (required)** — full detail in [`project-setup.txt`](./project-setup.txt) §B7:
+
+1. Gateway `:3000` + BFF `:3002` stable (`/health` OK)
+2. Strong unique `JWT_SECRET` (≥32 chars)
+3. `SWAGGER_ENABLED=false`
+4. Rotate/disable seed demo user (`maung@dealer.com` / `secret123`)
+5. Firewall: public `80/443` (+ SSH) only; block `3001–3017`, `5432`, `6379`
+
+**Next:** Postgres/Redis strong creds, `CORS_ORIGINS`, non-root PM2, real payment webhooks, IRD verify.
+
+After deploy: `git pull` → set `JWT_SECRET` → `npm install` → `pm2:delete` → `pm2:start` → `pm2 save`
 
 ## Infrastructure
 

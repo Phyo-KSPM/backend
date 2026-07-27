@@ -32,12 +32,27 @@
   cd /opt/ceir/backend
   cp .env.example .env
   nano .env
+  # REQUIRED: JWT_SECRET (strong), SWAGGER_ENABLED=false
+  # Firewall: only 80/443 public — see project-setup.txt §B7
   npm install
   npm run db:setup
   npm run pm2:start
   npm run pm2:status
 
   ★ npm run docker:infra  မလုပ်ရ
+
+
+--------------------------------------------------------------------------------
+2b) Linux — production security (အမြန်)
+--------------------------------------------------------------------------------
+
+  [ ] JWT_SECRET ≥32 chars (unique)
+  [ ] SWAGGER_ENABLED=false
+  [ ] Demo password rotate/disable
+  [ ] Firewall: block 3001–3017, 5432, 6379
+  [ ] curl /health + curl /profile without token → 401
+
+  အသေးစိတ်: project-setup.txt → အပိုင်း B7
 
 
 --------------------------------------------------------------------------------
@@ -61,8 +76,9 @@
   STEP 4  npm run pm2:start
   STEP 5  http://localhost:3000/health
 
-  Demo: maung@dealer.com / secret123
+  Demo: maung@dealer.com / secret123   (local seed only — not for production)
   IMEI:  359876543210108
+  Security checklist (prod): project-setup.txt §B7
 
 
 --------------------------------------------------------------------------------
