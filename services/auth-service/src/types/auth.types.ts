@@ -1,11 +1,14 @@
 export type DevicePlatform = 'android' | 'ios';
 
+/** Login may use email (mobile/web) or agentId (web Agent User). */
 export interface AuthLoginDto {
-  email: string;
+  email?: string;
+  agentId?: string;
   password: string;
-  deviceFingerprint: string;
+  deviceFingerprint?: string;
   deviceName?: string;
-  platform?: DevicePlatform;
+  /** android | ios = mobile (device bind). web = admin console (no bind). */
+  platform?: DevicePlatform | 'web';
   appVersion?: string;
 }
 
@@ -19,6 +22,7 @@ export interface BindDeviceDto {
 export interface UserRow {
   id: string;
   email: string;
+  agent_id: string;
   password_hash: string;
   phone: string | null;
   full_name: string;
@@ -42,6 +46,7 @@ export interface BindingRow {
 
 export interface PublicUser {
   id: string;
+  agentId: string;
   email: string;
   phone: string | null;
   fullName: string;

@@ -68,16 +68,27 @@ export function buildOpenApiDoc() {
         Error: errorSchema,
         LoginRequest: {
           type: 'object',
-          required: ['email', 'password', 'deviceFingerprint'],
+          description:
+            'Provide password plus either email or agentId. Mobile must send deviceFingerprint (android/ios). Web admin uses platform=web (no device bind).',
+          required: ['password'],
           properties: {
             email: { type: 'string', format: 'email', example: 'maung@dealer.com' },
+            agentId: {
+              type: 'string',
+              example: 'AGT-2026-001',
+              description: 'Agent Account ID (web Agent User login)',
+            },
             password: { type: 'string', format: 'password', example: 'secret123' },
             deviceFingerprint: {
               type: 'string',
               example: 'demo-device-fingerprint-001',
             },
             deviceName: { type: 'string', example: 'Pixel 8' },
-            platform: { type: 'string', enum: ['android', 'ios'], example: 'android' },
+            platform: {
+              type: 'string',
+              enum: ['android', 'ios', 'web'],
+              example: 'android',
+            },
             appVersion: { type: 'string', example: '1.0.0' },
           },
         },
@@ -89,13 +100,42 @@ export function buildOpenApiDoc() {
             tokenType: { type: 'string', example: 'Bearer' },
             expiresIn: { type: 'integer', example: 3600 },
             user: { $ref: '#/components/schemas/PublicUser' },
-            deviceBinding: { $ref: '#/components/schemas/DeviceBinding' },
+            deviceBinding: {
+              oneOf: [
+                { $ref: '#/components/schemas/DeviceBinding' },
+                { type: 'null' },
+              ],
+            },
+          },
+        },
+        MobileLoginResponse: {
+          type: 'object',
+          description: 'Shaped by BFF for mobile clients (`POST /bff/login`)',
+          properties: {
+            success: { type: 'boolean', example: true },
+            accessToken: { type: 'string' },
+            refreshToken: { type: 'string' },
+            tokenType: { type: 'string', example: 'Bearer' },
+            expiresIn: { type: 'integer', example: 3600 },
+            user: { $ref: '#/components/schemas/PublicUser' },
+            device: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                bound: { type: 'boolean' },
+                fingerprint: { type: 'string' },
+                name: { type: 'string', nullable: true },
+                platform: { type: 'string' },
+                boundAt: { type: 'string', format: 'date-time' },
+              },
+            },
           },
         },
         PublicUser: {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
+            agentId: { type: 'string', example: 'AGT-2026-001' },
             email: { type: 'string' },
             phone: { type: 'string', nullable: true },
             fullName: { type: 'string' },
@@ -224,6 +264,30 @@ export function buildOpenApiDoc() {
             },
             '401': {
               description: 'Invalid or expired refresh token',
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+            },
+          },
+        },
+      },
+      '/auth/logout': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Revoke current session (refresh invalidated)',
+          security: [{ bearerAuth: [] }],
+          responses: {
+            '200': {
+              description: 'Session revoked',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: { success: { type: 'boolean' } },
+                  },
+                },
+              },
+            },
+            '401': {
+              description: 'Unauthorized',
               content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
             },
           },
@@ -725,8 +789,9 @@ export function buildOpenApiDoc() {
       '/bff/login': {
         post: {
           tags: ['BFF'],
-          summary: 'BFF login (proxied)',
-          description: 'Same payload as `/login`; aggregated via BFF.',
+          summary: 'Mobile login (shaped response)',
+          description:
+            'Preferred mobile entry via api-gateway. Proxies auth and returns MobileLoginResponse.',
           requestBody: {
             required: true,
             content: {
@@ -737,10 +802,10 @@ export function buildOpenApiDoc() {
           },
           responses: {
             '200': {
-              description: 'Login response',
+              description: 'Mobile-shaped login response',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/LoginResponse' },
+                  schema: { $ref: '#/components/schemas/MobileLoginResponse' },
                 },
               },
             },

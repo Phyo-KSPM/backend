@@ -53,22 +53,30 @@ Smoke checks (SSH / localhost only — `/health` is not public):
 
 Demo login (local seed only — change/disable on production):  
 `maung@dealer.com` / `aung@dealer.com` / `thiri@dealer.com` — password `secret123`  
+Agent Account IDs: `AGT-2026-001` / `AGT-2026-002` / `AGT-2026-003`  
 Sample IMEI: `359876543210108`
+
+**Clients:** Mobile → `POST /openapi/v1/bff/login` · Web admin → `POST /openapi/v1/login` (`platform: "web"`, email or `agentId`).
 
 ### Security notes
 
-Already in code: HS256 JWT + expiry, **gateway auth middleware** (token required except login/refresh),
-401 without token on all business routes (including IMEI + NRC), ownership on pay/tax/payments,
+Already in code: **HS256 JWT access** + **refresh session in DB** (`auth_sessions`),
+gateway Bearer auth (except login/refresh), logout revoke, device binding,
+401 without token on business routes (including IMEI + NRC), ownership on pay/tax/payments,
 weak-secret boot fail, Swagger off by default in production,
 **gateway rate limits** (global / login / IMEI) + auth-service login limits.
+
+**Mobile auth flow:** `POST /login` → save `accessToken` → `Authorization: Bearer <accessToken>` on `/imei/check` etc.
+Refresh via `POST /auth/refresh`; logout via `POST /auth/logout`.
 
 **Production checklist (required)** — full detail in [`project-setup.txt`](./project-setup.txt) §B7:
 
 1. Gateway `:3000` + BFF `:3002` stable — check **on server**: `curl -s http://localhost:3000/health` (not via public URL)
-2. Strong unique `JWT_SECRET` (≥32 chars)
+2. Strong unique `JWT_SECRET` (≥32 chars) — **same value for all services**
 3. `SWAGGER_ENABLED=false`
-4. Rotate/disable seed demo user (`maung@dealer.com` / `secret123`)
-5. Firewall: public `80/443` (+ SSH) only; block `3001–3017`, `5432`, `6379`
+4. After deploy: `npm run db:migrate` (needs `auth_sessions` table)
+5. Rotate/disable seed demo user (`maung@dealer.com` / `secret123`)
+6. Firewall: public `80/443` (+ SSH) only; block `3001–3017`, `5432`, `6379`
 
 **Public routes only:** `POST /login`, `POST /auth/refresh`, `POST /bff/login`.  
 `GET /health` is **localhost-only** (blocked when reached via nginx / public proxy).  

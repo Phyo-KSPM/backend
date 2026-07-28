@@ -1,9 +1,13 @@
 import { query } from '../config/database';
 import { BindingRow, DevicePlatform, PublicUser, UserRow } from '../types/auth.types';
 
+const USER_COLUMNS = `id, email, agent_id, password_hash, phone, full_name, address, township_id,
+              business_name, tin, business_registration_no, dealer_verified`;
+
 function toPublicUser(u: UserRow): PublicUser {
   return {
     id: u.id,
+    agentId: u.agent_id,
     email: u.email,
     phone: u.phone,
     fullName: u.full_name,
@@ -16,13 +20,21 @@ function toPublicUser(u: UserRow): PublicUser {
   };
 }
 
+export type AuthSessionRow = {
+  id: string;
+  user_id: string;
+  refresh_token_hash: string;
+  device_fingerprint: string;
+  expires_at: Date;
+  revoked_at: Date | null;
+};
+
 export const AuthRepository = {
   async findUserByEmail(email: string): Promise<(UserRow & { public: PublicUser }) | null> {
     const { rows } = await query<UserRow>(
-      `SELECT id, email, password_hash, phone, full_name, address, township_id,
-              business_name, tin, business_registration_no, dealer_verified
+      `SELECT ${USER_COLUMNS}
        FROM users
-       WHERE email = $1
+       WHERE lower(email) = lower($1)
        LIMIT 1`,
       [email]
     );
@@ -30,10 +42,23 @@ export const AuthRepository = {
     return { ...rows[0], public: toPublicUser(rows[0]) };
   },
 
+  async findUserByAgentId(
+    agentId: string
+  ): Promise<(UserRow & { public: PublicUser }) | null> {
+    const { rows } = await query<UserRow>(
+      `SELECT ${USER_COLUMNS}
+       FROM users
+       WHERE lower(agent_id) = lower($1)
+       LIMIT 1`,
+      [agentId]
+    );
+    if (!rows[0]) return null;
+    return { ...rows[0], public: toPublicUser(rows[0]) };
+  },
+
   async findUserById(id: string): Promise<PublicUser | null> {
     const { rows } = await query<UserRow>(
-      `SELECT id, email, password_hash, phone, full_name, address, township_id,
-              business_name, tin, business_registration_no, dealer_verified
+      `SELECT ${USER_COLUMNS}
        FROM users
        WHERE id = $1
        LIMIT 1`,
@@ -86,26 +111,73 @@ export const AuthRepository = {
     return rows[0];
   },
 
-  async saveRefreshToken(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
-    await query(
-      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
-       VALUES ($1, $2, $3)`,
-      [userId, tokenHash, expiresAt.toISOString()]
+  async createSession(input: {
+    userId: string;
+    refreshTokenHash: string;
+    deviceFingerprint: string;
+    expiresAt: Date;
+  }): Promise<AuthSessionRow> {
+    const { rows } = await query<AuthSessionRow>(
+      `INSERT INTO auth_sessions
+         (user_id, refresh_token_hash, device_fingerprint, expires_at)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, user_id, refresh_token_hash, device_fingerprint, expires_at, revoked_at`,
+      [
+        input.userId,
+        input.refreshTokenHash,
+        input.deviceFingerprint,
+        input.expiresAt.toISOString(),
+      ]
     );
+    return rows[0];
   },
 
-  async findRefreshToken(tokenHash: string): Promise<{ user_id: string; expires_at: Date } | null> {
-    const { rows } = await query<{ user_id: string; expires_at: Date }>(
-      `SELECT user_id, expires_at
-       FROM refresh_tokens
-       WHERE token_hash = $1
+  async findActiveSessionByRefreshHash(
+    tokenHash: string
+  ): Promise<AuthSessionRow | null> {
+    const { rows } = await query<AuthSessionRow>(
+      `SELECT id, user_id, refresh_token_hash, device_fingerprint, expires_at, revoked_at
+       FROM auth_sessions
+       WHERE refresh_token_hash = $1
+         AND revoked_at IS NULL
+         AND expires_at > NOW()
        LIMIT 1`,
       [tokenHash]
     );
     return rows[0] ?? null;
   },
 
-  async deleteRefreshToken(tokenHash: string): Promise<void> {
-    await query(`DELETE FROM refresh_tokens WHERE token_hash = $1`, [tokenHash]);
+  async findActiveSessionById(sessionId: string): Promise<AuthSessionRow | null> {
+    const { rows } = await query<AuthSessionRow>(
+      `SELECT id, user_id, refresh_token_hash, device_fingerprint, expires_at, revoked_at
+       FROM auth_sessions
+       WHERE id = $1
+         AND revoked_at IS NULL
+         AND expires_at > NOW()
+       LIMIT 1`,
+      [sessionId]
+    );
+    return rows[0] ?? null;
+  },
+
+  async touchSession(sessionId: string): Promise<void> {
+    await query(`UPDATE auth_sessions SET last_used_at = NOW() WHERE id = $1`, [
+      sessionId,
+    ]);
+  },
+
+  async revokeSession(sessionId: string): Promise<void> {
+    await query(
+      `UPDATE auth_sessions SET revoked_at = NOW() WHERE id = $1 AND revoked_at IS NULL`,
+      [sessionId]
+    );
+  },
+
+  async revokeAllSessionsForUser(userId: string): Promise<void> {
+    await query(
+      `UPDATE auth_sessions SET revoked_at = NOW()
+       WHERE user_id = $1 AND revoked_at IS NULL`,
+      [userId]
+    );
   },
 };

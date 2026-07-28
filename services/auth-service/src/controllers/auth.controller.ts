@@ -26,6 +26,18 @@ export const AuthController = {
     res.json(result.data);
   },
 
+  async logout(req: Request, res: Response): Promise<void> {
+    const result = await AuthService.logout(req.header('authorization') || undefined);
+    if (!result.ok) {
+      res.status(result.status).json({
+        success: false,
+        error: { code: result.code, message: result.message },
+      });
+      return;
+    }
+    res.json(result.data);
+  },
+
   async getBinding(req: Request, res: Response): Promise<void> {
     const userId = AuthService.resolveUserId(req.header('authorization') || undefined);
     if (!userId) {

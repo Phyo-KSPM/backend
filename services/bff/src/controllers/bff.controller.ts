@@ -24,19 +24,31 @@ export const BffController = {
 
   async login(req: Request, res: Response): Promise<void> {
     try {
-      const { email, password, deviceFingerprint, deviceName, platform, appVersion } = req.body || {};
-      if (!email || !password || !deviceFingerprint) {
+      const {
+        email,
+        agentId,
+        password,
+        deviceFingerprint,
+        deviceName,
+        platform,
+        appVersion,
+      } = req.body || {};
+
+      if ((!email && !agentId) || !password || !deviceFingerprint) {
         res.status(400).json({
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'email, password and deviceFingerprint are required',
+            message:
+              'password, deviceFingerprint, and either email or agentId are required',
           },
         });
         return;
       }
+
       const data = await BffService.login({
         email,
+        agentId,
         password,
         deviceFingerprint,
         deviceName,

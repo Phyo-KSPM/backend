@@ -11,6 +11,8 @@ const WEAK_SECRETS = new Set([
 export type AccessTokenClaims = {
   sub: string;
   email?: string;
+  /** Auth session id — ties JWT to a DB session row */
+  jti?: string;
   iat: number;
   exp: number;
 };
@@ -60,7 +62,7 @@ export function generateJwtSecret(): string {
 }
 
 export function signAccessToken(
-  claims: { sub: string; email?: string },
+  claims: { sub: string; email?: string; jti: string },
   secret: string,
   expiresInSec = 3600
 ): string {
@@ -68,11 +70,13 @@ export function signAccessToken(
   const header = b64urlJson({ alg: 'HS256', typ: 'JWT' });
   const payload = b64urlJson({
     sub: claims.sub,
+    jti: claims.jti,
     ...(claims.email ? { email: claims.email } : {}),
     iat: now,
     exp: now + expiresInSec,
   });
   const data = `${header}.${payload}`;
+  // Standard JWT: header.payload.signature (never "demo.*" prefixes)
   return `${data}.${hmacSign(data, secret)}`;
 }
 

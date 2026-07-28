@@ -1,5 +1,6 @@
 export interface User {
   id: string;
+  agentId: string;
   email: string;
   phone: string;
   fullName: string;

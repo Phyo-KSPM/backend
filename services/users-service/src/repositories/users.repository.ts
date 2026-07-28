@@ -5,6 +5,7 @@ import { DealerVerifyDto } from '../types/users.types';
 interface UserRow {
   id: string;
   email: string;
+  agent_id: string;
   phone: string | null;
   full_name: string;
   address: string | null;
@@ -27,6 +28,7 @@ interface BindingRow {
 function mapUser(u: UserRow) {
   return {
     id: u.id,
+    agentId: u.agent_id,
     email: u.email,
     phone: u.phone,
     fullName: u.full_name,
@@ -47,7 +49,7 @@ export const UsersRepository = {
     if (cached) return cached;
 
     const { rows } = await query<UserRow>(
-      `SELECT id, email, phone, full_name, address, township_id,
+      `SELECT id, email, agent_id, phone, full_name, address, township_id,
               business_name, tin, business_registration_no, dealer_verified
        FROM users WHERE id = $1 LIMIT 1`,
       [id]
@@ -84,7 +86,7 @@ export const UsersRepository = {
        WHERE id = $1
          AND business_registration_no = $2
          AND tin = $3
-       RETURNING id, email, phone, full_name, address, township_id,
+       RETURNING id, email, agent_id, phone, full_name, address, township_id,
                  business_name, tin, business_registration_no, dealer_verified`,
       [userId, dto.businessRegistrationNo, dto.tin]
     );

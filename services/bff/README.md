@@ -1,29 +1,46 @@
 # bff (Backend-for-Frontend)
 
 **Port:** `3002` (`BFF_PORT`)  
-**Role:** Aggregates multiple domain calls for a single mobile/screen-friendly response.
+**Role:** Shapes mobile-friendly responses. Clients should call **api-gateway** only.
 
-## What it does
+## Routes (via gateway)
 
-- `POST /login` — forwards login to auth-service (same payload as gateway `/login`)
-- `GET /dashboard` — loads profile + recent activities in parallel (requires Bearer token)
-- `/health` — **localhost-only** (same rule as api-gateway)
-
-## Routes
-
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/login` | No | Proxy login to auth-service |
-| GET | `/dashboard` | Bearer | `{ profile, recentActivities }` |
+| Method | Gateway path | Auth | Description |
+|--------|--------------|------|-------------|
+| POST | `/openapi/v1/bff/login` | No | Mobile login shape |
+| GET | `/openapi/v1/bff/dashboard` | Bearer | `{ success, profile, recentActivities }` |
 | GET | `/health` | Local | Health |
 
-Via gateway: `/openapi/v1/bff/login`, `/openapi/v1/bff/dashboard`
+## Mobile login response shape
 
-## Notes
+```json
+{
+  "success": true,
+  "accessToken": "eyJ...",
+  "refreshToken": "rt_...",
+  "tokenType": "Bearer",
+  "expiresIn": 3600,
+  "user": {
+    "id": "...",
+    "agentId": "AGT-2026-002",
+    "email": "aung@dealer.com",
+    "fullName": "Aung Aung",
+    "phone": "...",
+    "dealerVerified": true
+  },
+  "device": {
+    "bound": true,
+    "fingerprint": "...",
+    "name": "...",
+    "platform": "android",
+    "boundAt": "..."
+  }
+}
+```
 
-- Prefer calling **api-gateway** from mobile; BFF is an optional aggregation layer
-- Dashboard forwards `Authorization` to users-service and activities-service
-- Does not own a database
+Accepts `email` **or** `agentId` + `password` + `deviceFingerprint`.
+
+Web admin should use gateway `POST /openapi/v1/login` with `platform: "web"` (not this BFF shape).
 
 ## Run
 

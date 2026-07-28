@@ -20,12 +20,13 @@ ON CONFLICT (id) DO UPDATE SET
 SELECT setval(pg_get_serial_sequence('nrc_townships', 'id'), GREATEST((SELECT MAX(id) FROM nrc_townships), 210));
 
 INSERT INTO users (
-  id, email, password_hash, phone, full_name, address, township_id,
+  id, email, agent_id, password_hash, phone, full_name, address, township_id,
   business_name, tin, business_registration_no, dealer_verified
 ) VALUES
 (
   'b1f2a3c4-d5e6-7890-abcd-ef1234567890',
   'maung@dealer.com',
+  'AGT-2026-001',
   '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
   '09791243682',
   'Maung Maung',
@@ -39,6 +40,7 @@ INSERT INTO users (
 (
   'c2a3b4c5-e6f7-8901-bcde-f12345678901',
   'aung@dealer.com',
+  'AGT-2026-002',
   '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
   '09123456789',
   'Aung Aung',
@@ -52,6 +54,7 @@ INSERT INTO users (
 (
   'd3b4c5d6-f708-9012-cdef-123456789012',
   'thiri@dealer.com',
+  'AGT-2026-003',
   '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
   '09987654321',
   'Thiri Hlaing',
@@ -63,6 +66,7 @@ INSERT INTO users (
   TRUE
 )
 ON CONFLICT (email) DO UPDATE SET
+  agent_id = EXCLUDED.agent_id,
   password_hash = EXCLUDED.password_hash,
   phone = EXCLUDED.phone,
   full_name = EXCLUDED.full_name,

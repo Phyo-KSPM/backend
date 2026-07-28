@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS nrc_townships (
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL UNIQUE,
+  agent_id TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   phone TEXT,
   full_name TEXT NOT NULL,

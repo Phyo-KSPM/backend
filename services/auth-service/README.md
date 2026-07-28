@@ -1,68 +1,80 @@
 # auth-service
 
 **Port:** `3010` (`AUTH_SERVICE_PORT`)  
-**Role:** Authentication, token issue/refresh, and one-device binding.
+**Role:** JWT access + refresh sessions; email or Agent Account ID login.
 
-## What it does
+## Login identifiers
 
-- Validates email/password (bcrypt)
-- Issues **HS256 JWT** access tokens + opaque refresh tokens
-- Binds each account to a single `deviceFingerprint` (mobile device lock)
-- Stores refresh token hashes in Postgres
+| Field | Use |
+|-------|-----|
+| `email` | Mobile / email user |
+| `agentId` | Web Agent User (`AGT-2026-001`, …) |
+| `password` | Required |
+| `deviceFingerprint` | Required for mobile (`android` / `ios`) |
+| `platform` | `android` \| `ios` = device bind; `web` = admin console (no bind) |
 
-## Routes (direct service)
+## Client paths (via api-gateway only)
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/login` | No | Login + device bind/check |
-| POST | `/auth/login` | No | Same as login (under `/auth`) |
-| POST | `/auth/refresh` | No | Rotate access + refresh tokens |
-| GET | `/device/binding` | Bearer | Current device binding |
-| POST | `/device/bind` | Bearer | Bind / refresh binding |
-| GET | `/health` | — | Service health |
+| Client | Gateway path | Notes |
+|--------|--------------|--------|
+| Mobile | `POST /openapi/v1/bff/login` | BFF shapes mobile response (`success`, `user.agentId`, `device`) |
+| Web admin | `POST /openapi/v1/login` | Raw auth response; use `platform: "web"` |
 
-Via gateway: `/openapi/v1/login`, `/openapi/v1/auth/refresh`, `/openapi/v1/device/*`
-
-## Login body
+## Mobile body example
 
 ```json
 {
   "email": "aung@dealer.com",
   "password": "secret123",
   "deviceFingerprint": "unique-phone-id",
-  "deviceName": "Pixel 8",
   "platform": "android",
+  "deviceName": "Pixel 8",
   "appVersion": "1.0.0"
 }
 ```
 
-`email`, `password`, `deviceFingerprint` are required.
+## Web Agent User example
 
-## Device binding rules
+```json
+{
+  "agentId": "AGT-2026-002",
+  "password": "secret123",
+  "platform": "web",
+  "deviceFingerprint": "ceir-admin-web-…",
+  "deviceName": "CEIR Admin Console"
+}
+```
 
-1. First successful login → create binding for that fingerprint  
-2. Same fingerprint → login OK (updates last seen)  
-3. Different fingerprint → **403** `ACCOUNT_BOUND_TO_OTHER_DEVICE`
+## Seed agent IDs
+
+| Email | Agent Account ID |
+|-------|------------------|
+| maung@dealer.com | AGT-2026-001 |
+| aung@dealer.com | AGT-2026-002 |
+| thiri@dealer.com | AGT-2026-003 |
+
+Password: `secret123`
 
 ## Tokens
 
-- **accessToken:** HS256 JWT (`sub`, `email`, `exp`); default TTL 3600s (`ACCESS_TOKEN_TTL_SEC`)
-- **refreshToken:** random `rt_…`, SHA-256 hashed in DB, ~7 days
-- Refresh deletes the old refresh row and issues a new pair
+- **accessToken:** HS256 JWT (`sub`, `email`, `jti`, `exp`)
+- **refreshToken:** `rt_…`, hash in `auth_sessions`
+- Web login does **not** overwrite mobile device binding
 
-## Rate limit (service-level)
+## Routes
 
-- `/login`: 30 / 15 minutes / IP  
-- `/auth/*`: 60 / 15 minutes / IP  
-
-(Gateway also rate-limits these paths.)
-
-## Data
-
-Tables: `users`, `refresh_tokens`, `user_device_bindings`
+| Method | Path | Auth |
+|--------|------|------|
+| POST | `/login` | No |
+| POST | `/auth/login` | No |
+| POST | `/auth/refresh` | No |
+| POST | `/auth/logout` | Bearer |
+| GET/POST | `/device/*` | Bearer |
 
 ## Run
 
 ```bash
+npm run db:migrate
+npm run db:seed
 npm run dev:auth
 ```
