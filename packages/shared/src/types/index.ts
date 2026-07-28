@@ -1,7 +1,7 @@
 export interface AuthLoginDto {
   email: string;
   password: string;
-  deviceFingerprint: string;
+  deviceId: string;
   deviceName?: string;
   platform?: 'android' | 'ios';
   appVersion?: string;
@@ -9,7 +9,6 @@ export interface AuthLoginDto {
 
 export interface AuthTokenResponse {
   accessToken: string;
-  refreshToken: string;
   tokenType: string;
   expiresIn: number;
 }
@@ -17,12 +16,8 @@ export interface AuthTokenResponse {
 export interface UserProfile {
   id: string;
   email: string;
-  phone: string;
+  phone: string | null;
   fullName: string;
-  address: string;
-  townshipId: number;
-  businessName: string;
-  tin: string;
-  businessRegistrationNo: string;
-  dealerVerified: boolean;
+  nrcNo: string | null;
+  address: string | null;
 }

@@ -48,7 +48,7 @@ npx pm2 save && npx pm2 startup
 Smoke checks (SSH / localhost only — `/health` is not public):
 
 - `curl -s http://localhost:3000/health` (on the server)
-- http://localhost:3000/openapi/v1/nrc/townships (needs Bearer token)
+- http://localhost:3000/openapi/v1/nrc/townships (public)
 - http://localhost:3001/docs — Swagger UI (local / trusted only)
 
 Demo login (local seed only — change/disable on production):  
@@ -60,31 +60,31 @@ Sample IMEI: `359876543210108`
 
 ### Security notes
 
-Already in code: **HS256 JWT access** + **refresh session in DB** (`auth_sessions`),
-gateway Bearer auth (except login/refresh), logout revoke, device binding,
-401 without token on business routes (including IMEI + NRC), ownership on pay/tax/payments,
+Already in code: **HS256 JWT access** + **session row in DB** (`auth_sessions` for logout revoke),
+gateway Bearer auth (except login / bff login / nrc townships), logout revoke, device binding,
+401 without token on business routes, ownership on pay/tax/payments,
 weak-secret boot fail, Swagger off by default in production,
 **gateway rate limits** (global / login / IMEI) + auth-service login limits.
 
 **Mobile auth flow:** `POST /login` → save `accessToken` → `Authorization: Bearer <accessToken>` on `/imei/check` etc.
-Refresh via `POST /auth/refresh`; logout via `POST /auth/logout`.
+Logout via `POST /auth/logout`. No refresh-token endpoint in this UI-first contract.
 
 **Production checklist (required)** — full detail in [`project-setup.txt`](./project-setup.txt) §B7:
 
 1. Gateway `:3000` + BFF `:3002` stable — check **on server**: `curl -s http://localhost:3000/health` (not via public URL)
 2. Strong unique `JWT_SECRET` (≥32 chars) — **same value for all services**
 3. `SWAGGER_ENABLED=false`
-4. After deploy: `npm run db:migrate` (needs `auth_sessions` table)
+4. After deploy: `npm run db:migrate` (needs `auth_sessions` + ER reconcile migrations)
 5. Rotate/disable seed demo user (`maung@dealer.com` / `secret123`)
 6. Firewall: public `80/443` (+ SSH) only; block `3001–3017`, `5432`, `6379`
 
-**Public routes only:** `POST /login`, `POST /auth/refresh`, `POST /bff/login`.  
+**Public routes only:** `POST /login`, `POST /bff/login`, `GET /nrc/townships`.  
 `GET /health` is **localhost-only** (blocked when reached via nginx / public proxy).  
 **All other `/openapi/v1/*` routes** need `Authorization: Bearer <accessToken>`.
 
 **Gateway rate limits (per IP):** all `120/min` · login `20/15min` · auth `40/15min` · IMEI `30/min` → **429** when exceeded.
 
-**Next:** Postgres/Redis strong creds, `CORS_ORIGINS`, non-root PM2, real payment webhooks, IRD verify.
+**Next:** Postgres/Redis strong creds, `CORS_ORIGINS`, non-root PM2, real payment webhooks.
 
 After deploy: `git pull` → set `JWT_SECRET` → `npm install` → `pm2:delete` → `pm2:start` → `pm2 save`
 
@@ -96,7 +96,7 @@ After deploy: `git pull` → set `JWT_SECRET` → `npm install` → `pm2:delete`
 | [swagger-service](./services/swagger-service/README.md) | 3001 | OpenAPI / Swagger UI |
 | [bff](./services/bff/README.md) | 3002 | Aggregated login + dashboard |
 | [auth-service](./services/auth-service/README.md) | 3010 | Login, JWT, device binding |
-| [users-service](./services/users-service/README.md) | 3011 | Profile, dealer verify |
+| [users-service](./services/users-service/README.md) | 3011 | Profile |
 | [devices-service](./services/devices-service/README.md) | 3012 | IMEI check |
 | [tax-service](./services/tax-service/README.md) | 3013 | Tax applications |
 | [payments-service](./services/payments-service/README.md) | 3014 | Batches & payments |

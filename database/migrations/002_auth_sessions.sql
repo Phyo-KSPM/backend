@@ -1,4 +1,5 @@
--- Production auth sessions: refresh tokens live in DB; access JWT carries session id (jti).
+-- Auth sessions: access JWT carries session id (jti) for logout revoke.
+-- refresh_token_hash is internal-only (not returned to clients; no /auth/refresh).
 CREATE TABLE IF NOT EXISTS auth_sessions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

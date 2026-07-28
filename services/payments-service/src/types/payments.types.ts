@@ -18,10 +18,6 @@ export interface PaymentBatch {
   batchId: string;
   userId: string;
   taxApplicationId: string | null;
-  tin: string;
-  businessRegistrationNo: string;
-  dealerBusinessName: string;
-  dealerVerified: boolean;
   status: PaymentBatchStatus;
   retryCount: number;
   lastPaymentError: string | null;
@@ -53,8 +49,6 @@ export interface Payment {
 }
 
 export interface CreateBatchDto {
-  tin: string;
-  businessRegistrationNo: string;
   items: Array<{ imei1: string; imei2?: string | null }>;
 }
 

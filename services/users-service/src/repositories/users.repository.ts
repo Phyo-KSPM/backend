@@ -1,19 +1,13 @@
 import { query } from '../config/database';
-import { cacheDel, cacheGet, cacheSet } from '../../../../packages/shared/src/redis/client';
-import { DealerVerifyDto } from '../types/users.types';
+import { cacheGet, cacheSet } from '../../../../packages/shared/src/redis/client';
 
 interface UserRow {
   id: string;
   email: string;
-  agent_id: string;
   phone: string | null;
   full_name: string;
+  nrc_no: string | null;
   address: string | null;
-  township_id: string | null;
-  business_name: string | null;
-  tin: string | null;
-  business_registration_no: string | null;
-  dealer_verified: boolean;
 }
 
 interface BindingRow {
@@ -28,16 +22,11 @@ interface BindingRow {
 function mapUser(u: UserRow) {
   return {
     id: u.id,
-    agentId: u.agent_id,
     email: u.email,
     phone: u.phone,
     fullName: u.full_name,
+    nrcNo: u.nrc_no,
     address: u.address,
-    townshipId: u.township_id != null ? Number(u.township_id) : null,
-    businessName: u.business_name,
-    tin: u.tin,
-    businessRegistrationNo: u.business_registration_no,
-    dealerVerified: u.dealer_verified,
   };
 }
 
@@ -49,8 +38,7 @@ export const UsersRepository = {
     if (cached) return cached;
 
     const { rows } = await query<UserRow>(
-      `SELECT id, email, agent_id, phone, full_name, address, township_id,
-              business_name, tin, business_registration_no, dealer_verified
+      `SELECT id, email, phone, full_name, nrc_no, address
        FROM users WHERE id = $1 LIMIT 1`,
       [id]
     );
@@ -69,29 +57,8 @@ export const UsersRepository = {
     const b = rows[0];
     if (!b) return null;
     return {
-      bound: true,
-      deviceFingerprint: b.device_fingerprint,
-      deviceName: b.device_name,
-      platform: b.platform,
-      appVersion: b.app_version,
+      deviceId: b.device_fingerprint,
       boundAt: new Date(b.bound_at).toISOString(),
-      lastSeenAt: new Date(b.last_seen_at).toISOString(),
     };
-  },
-
-  async verifyDealer(userId: string, dto: DealerVerifyDto) {
-    const { rows } = await query<UserRow>(
-      `UPDATE users
-       SET dealer_verified = TRUE
-       WHERE id = $1
-         AND business_registration_no = $2
-         AND tin = $3
-       RETURNING id, email, agent_id, phone, full_name, address, township_id,
-                 business_name, tin, business_registration_no, dealer_verified`,
-      [userId, dto.businessRegistrationNo, dto.tin]
-    );
-    if (!rows[0]) return null;
-    await cacheDel(profileCacheKey(userId));
-    return mapUser(rows[0]);
   },
 };

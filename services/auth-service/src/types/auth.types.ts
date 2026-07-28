@@ -5,6 +5,9 @@ export interface AuthLoginDto {
   email?: string;
   agentId?: string;
   password: string;
+  /** Mobile device id (stored as device_fingerprint). */
+  deviceId?: string;
+  /** @deprecated Prefer deviceId — accepted for older clients. */
   deviceFingerprint?: string;
   deviceName?: string;
   /** android | ios = mobile (device bind). web = admin console (no bind). */
@@ -13,7 +16,8 @@ export interface AuthLoginDto {
 }
 
 export interface BindDeviceDto {
-  deviceFingerprint: string;
+  deviceId?: string;
+  deviceFingerprint?: string;
   deviceName?: string;
   platform?: DevicePlatform;
   appVersion?: string;
@@ -26,12 +30,10 @@ export interface UserRow {
   password_hash: string;
   phone: string | null;
   full_name: string;
+  nrc_no: string | null;
   address: string | null;
   township_id: string | null;
   business_name: string | null;
-  tin: string | null;
-  business_registration_no: string | null;
-  dealer_verified: boolean;
 }
 
 export interface BindingRow {
@@ -44,16 +46,12 @@ export interface BindingRow {
   last_seen_at: Date;
 }
 
+/** Public login/profile user — UI-visible fields only. */
 export interface PublicUser {
   id: string;
-  agentId: string;
   email: string;
   phone: string | null;
   fullName: string;
+  nrcNo: string | null;
   address: string | null;
-  townshipId: number | null;
-  businessName: string | null;
-  tin: string | null;
-  businessRegistrationNo: string | null;
-  dealerVerified: boolean;
 }

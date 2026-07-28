@@ -3,12 +3,12 @@ import { CreateBatchDto, PayBatchDto } from '../types/payments.types';
 
 export const PaymentsService = {
   async createBatch(dto: CreateBatchDto, userId: string) {
-    if (!dto.tin || !dto.businessRegistrationNo || !Array.isArray(dto.items) || dto.items.length === 0) {
+    if (!Array.isArray(dto.items) || dto.items.length === 0) {
       return {
         ok: false as const,
         status: 400,
         code: 'VALIDATION_ERROR',
-        message: 'tin, businessRegistrationNo and items are required',
+        message: 'items are required',
       };
     }
     try {
@@ -16,14 +16,6 @@ export const PaymentsService = {
       const { _id: _batchUuid, ...rest } = data;
       return { ok: true as const, data: rest };
     } catch (err: any) {
-      if (err.code === 'DEALER_NOT_VERIFIED') {
-        return {
-          ok: false as const,
-          status: 403,
-          code: 'DEALER_NOT_VERIFIED',
-          message: err.message,
-        };
-      }
       if (err.code === 'IMEI_NOT_FOUND') {
         return { ok: false as const, status: 404, code: 'IMEI_NOT_FOUND', message: err.message };
       }

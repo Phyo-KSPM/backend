@@ -1,5 +1,5 @@
 export type ClaimStatus = 'submitted' | 'under_review' | 'approved' | 'rejected';
-export type ClaimDocType = 'nrc_front' | 'nrc_back' | 'device_photo';
+export type ClaimDocType = 'device_photo';
 
 export interface ClaimDocument {
   id: number;
@@ -17,7 +17,7 @@ export interface DeviceClaim {
   claimantNrcNumber: string;
   claimantPhone: string;
   address: string;
-  townshipId: number;
+  townshipId: number | null;
   deviceId: number | null;
   imei1: string;
   imei2: string | null;
@@ -28,15 +28,12 @@ export interface DeviceClaim {
   documents: ClaimDocument[];
 }
 
+/** UI-minimal claim payload; profile fields are enriched server-side. */
 export interface CreateClaimDto {
-  fullName: string;
-  nrcNumber: string;
-  phone: string;
-  address: string;
-  townshipId: number;
   imei1: string;
   imei2?: string | null;
-  nrcFrontUrl?: string;
-  nrcBackUrl?: string;
+  reason?: string | null;
   devicePhotoUrl?: string;
+  /** Multipart field alias accepted from controllers. */
+  devicePhoto?: string;
 }

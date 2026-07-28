@@ -1,34 +1,34 @@
 # users-service
 
 **Port:** `3011` (`USERS_SERVICE_PORT`)  
-**Role:** User profile and dealer verification.
+**Role:** Authenticated user profile (UI-visible fields only).
 
 ## What it does
 
-- Returns the authenticated user’s profile (plus device binding if present)
-- Marks a dealer as verified when business registration + TIN match (local check; not live IRD yet)
+- Returns the authenticated user’s public profile
 - Caches profile reads in Redis
 
 ## Routes
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/profile` | Bearer | Profile + optional `deviceBinding` |
-| POST | `/dealer/verify` | Bearer | Verify dealer credentials |
+| GET | `/profile` | Bearer | Public user profile |
 | GET | `/health` | — | Service health |
 
-Via gateway: `/openapi/v1/profile`, `/openapi/v1/dealer/verify`
+Via gateway: `/openapi/v1/profile`
 
-## Dealer verify body
+## Profile response
 
 ```json
 {
-  "businessRegistrationNo": "REG-2026-002",
-  "tin": "234567890"
+  "id": "b1f2…",
+  "email": "maung@dealer.com",
+  "phone": "09791243682",
+  "fullName": "Maung Maung",
+  "nrcNo": "10/MADAMA(N)123456",
+  "address": "No 27(G), Mayangone, Yangon"
 }
 ```
-
-Both fields required. On success sets `dealer_verified = true` when data matches the user record (demo/local logic).
 
 ## Auth
 
@@ -36,8 +36,8 @@ All business routes require a valid Bearer JWT (`requireAuth` middleware).
 
 ## Data / cache
 
-- Table: `users` (+ reads `user_device_bindings`)
-- Redis key pattern: profile cache (invalidated on dealer verify)
+- Table: `users`
+- Redis key pattern: profile cache
 
 ## Run
 

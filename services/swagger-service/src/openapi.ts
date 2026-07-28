@@ -27,7 +27,7 @@ export function buildOpenApiDoc() {
         '',
         'Authorize with a valid `accessToken` from `POST /login` (Bearer HS256 JWT).',
         '',
-        '**All API routes require Bearer token** except `POST /login`, `POST /auth/refresh`, and `POST /bff/login`.',
+        '**All API routes require Bearer token** except `POST /login`, `POST /bff/login`, and `GET /nrc/townships`.',
         'Protected routes return **401** without a valid token. Tokens expire (`expiresIn`).',
         env.exposeDemoHints
           ? '\n\n**Local demo only:** seed user may exist after `db:seed` — never reuse demo passwords in production.'
@@ -45,14 +45,14 @@ export function buildOpenApiDoc() {
       },
     ],
     tags: [
-      { name: 'Auth', description: 'Login, refresh, device binding' },
-      { name: 'Users', description: 'Profile & dealer verification' },
+      { name: 'Auth', description: 'Login, logout, device binding' },
+      { name: 'Users', description: 'Profile' },
       { name: 'Devices', description: 'IMEI check' },
       { name: 'Tax', description: 'Tax applications' },
       { name: 'Payments', description: 'Payment batches & history' },
       { name: 'Claims', description: 'Device ownership claims' },
       { name: 'Activities', description: 'User activity feed' },
-      { name: 'NRC', description: 'NRC townships reference' },
+      { name: 'NRC', description: 'NRC townships reference (public)' },
       { name: 'BFF', description: 'Backend-for-frontend aggregates' },
     ],
     components: {
@@ -69,7 +69,7 @@ export function buildOpenApiDoc() {
         LoginRequest: {
           type: 'object',
           description:
-            'Provide password plus either email or agentId. Mobile must send deviceFingerprint (android/ios). Web admin uses platform=web (no device bind).',
+            'Provide password plus either email or agentId. Mobile must send deviceId (android/ios). Web admin uses platform=web (no device bind).',
           required: ['password'],
           properties: {
             email: { type: 'string', format: 'email', example: 'maung@dealer.com' },
@@ -79,33 +79,32 @@ export function buildOpenApiDoc() {
               description: 'Agent Account ID (web Agent User login)',
             },
             password: { type: 'string', format: 'password', example: 'secret123' },
-            deviceFingerprint: {
+            deviceId: {
               type: 'string',
-              example: 'demo-device-fingerprint-001',
+              example: 'android-a1b2c3d4',
             },
-            deviceName: { type: 'string', example: 'Pixel 8' },
+            deviceName: { type: 'string', example: 'Galaxy A16' },
             platform: {
               type: 'string',
               enum: ['android', 'ios', 'web'],
               example: 'android',
             },
-            appVersion: { type: 'string', example: '1.0.0' },
+            appVersion: { type: 'string', example: '1.0.0+1' },
           },
         },
         LoginResponse: {
           type: 'object',
           properties: {
             accessToken: { type: 'string' },
-            refreshToken: { type: 'string' },
             tokenType: { type: 'string', example: 'Bearer' },
-            expiresIn: { type: 'integer', example: 3600 },
-            user: { $ref: '#/components/schemas/PublicUser' },
+            expiresIn: { type: 'integer', example: 604800 },
             deviceBinding: {
               oneOf: [
                 { $ref: '#/components/schemas/DeviceBinding' },
                 { type: 'null' },
               ],
             },
+            user: { $ref: '#/components/schemas/PublicUser' },
           },
         },
         MobileLoginResponse: {
@@ -114,49 +113,33 @@ export function buildOpenApiDoc() {
           properties: {
             success: { type: 'boolean', example: true },
             accessToken: { type: 'string' },
-            refreshToken: { type: 'string' },
             tokenType: { type: 'string', example: 'Bearer' },
-            expiresIn: { type: 'integer', example: 3600 },
-            user: { $ref: '#/components/schemas/PublicUser' },
-            device: {
-              type: 'object',
-              nullable: true,
-              properties: {
-                bound: { type: 'boolean' },
-                fingerprint: { type: 'string' },
-                name: { type: 'string', nullable: true },
-                platform: { type: 'string' },
-                boundAt: { type: 'string', format: 'date-time' },
-              },
+            expiresIn: { type: 'integer', example: 604800 },
+            deviceBinding: {
+              oneOf: [
+                { $ref: '#/components/schemas/DeviceBinding' },
+                { type: 'null' },
+              ],
             },
+            user: { $ref: '#/components/schemas/PublicUser' },
           },
         },
         PublicUser: {
           type: 'object',
           properties: {
             id: { type: 'string', format: 'uuid' },
-            agentId: { type: 'string', example: 'AGT-2026-001' },
             email: { type: 'string' },
             phone: { type: 'string', nullable: true },
             fullName: { type: 'string' },
+            nrcNo: { type: 'string', nullable: true },
             address: { type: 'string', nullable: true },
-            townshipId: { type: 'integer', nullable: true },
-            businessName: { type: 'string', nullable: true },
-            tin: { type: 'string', nullable: true },
-            businessRegistrationNo: { type: 'string', nullable: true },
-            dealerVerified: { type: 'boolean' },
           },
         },
         DeviceBinding: {
           type: 'object',
           properties: {
-            bound: { type: 'boolean' },
-            deviceFingerprint: { type: 'string' },
-            deviceName: { type: 'string', nullable: true },
-            platform: { type: 'string', enum: ['android', 'ios'] },
+            deviceId: { type: 'string' },
             boundAt: { type: 'string', format: 'date-time' },
-            appVersion: { type: 'string', nullable: true },
-            lastSeenAt: { type: 'string', format: 'date-time' },
           },
         },
         ImeiPair: {
@@ -194,7 +177,7 @@ export function buildOpenApiDoc() {
         post: {
           tags: ['Auth'],
           summary: 'Login',
-          description: 'Authenticate and bind/verify device fingerprint.',
+          description: 'Authenticate and bind/verify deviceId. Returns access token only (no refresh).',
           requestBody: {
             required: true,
             content: {
@@ -205,7 +188,7 @@ export function buildOpenApiDoc() {
           },
           responses: {
             '200': {
-              description: 'Tokens + user + device binding',
+              description: 'Access token + user + device binding',
               content: {
                 'application/json': {
                   schema: { $ref: '#/components/schemas/LoginResponse' },
@@ -227,53 +210,11 @@ export function buildOpenApiDoc() {
           },
         },
       },
-      '/auth/refresh': {
-        post: {
-          tags: ['Auth'],
-          summary: 'Refresh access token',
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['refreshToken'],
-                  properties: {
-                    refreshToken: { type: 'string' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            '200': {
-              description: 'New tokens',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      accessToken: { type: 'string' },
-                      refreshToken: { type: 'string' },
-                      tokenType: { type: 'string' },
-                      expiresIn: { type: 'integer' },
-                    },
-                  },
-                },
-              },
-            },
-            '401': {
-              description: 'Invalid or expired refresh token',
-              content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
-            },
-          },
-        },
-      },
       '/auth/logout': {
         post: {
           tags: ['Auth'],
-          summary: 'Revoke current session (refresh invalidated)',
-          security: [{ bearerAuth: [] }],
+          summary: 'Revoke current session',
+          security: bearerAuth,
           responses: {
             '200': {
               description: 'Session revoked',
@@ -329,9 +270,9 @@ export function buildOpenApiDoc() {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['deviceFingerprint'],
+                  required: ['deviceId'],
                   properties: {
-                    deviceFingerprint: { type: 'string' },
+                    deviceId: { type: 'string' },
                     deviceName: { type: 'string' },
                     platform: { type: 'string', enum: ['android', 'ios'] },
                     appVersion: { type: 'string' },
@@ -367,78 +308,15 @@ export function buildOpenApiDoc() {
           security: bearerAuth,
           responses: {
             '200': {
-              description: 'Profile + device binding',
+              description: 'Public user profile',
               content: {
                 'application/json': {
-                  schema: {
-                    allOf: [
-                      { $ref: '#/components/schemas/PublicUser' },
-                      {
-                        type: 'object',
-                        properties: {
-                          deviceBinding: {
-                            allOf: [
-                              { $ref: '#/components/schemas/DeviceBinding' },
-                              { type: 'object', nullable: true },
-                            ],
-                          },
-                        },
-                      },
-                    ],
-                  },
+                  schema: { $ref: '#/components/schemas/PublicUser' },
                 },
               },
             },
             '401': {
               description: 'Unauthorized',
-              content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
-            },
-          },
-        },
-      },
-      '/dealer/verify': {
-        post: {
-          tags: ['Users'],
-          summary: 'Verify dealer (IRD)',
-          security: bearerAuth,
-          requestBody: {
-            required: true,
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  required: ['businessRegistrationNo', 'tin'],
-                  properties: {
-                    businessRegistrationNo: { type: 'string', example: 'BRN-123456' },
-                    tin: { type: 'string', example: 'TIN-998877' },
-                  },
-                },
-              },
-            },
-          },
-          responses: {
-            '200': {
-              description: 'Verification result',
-              content: {
-                'application/json': {
-                  schema: {
-                    type: 'object',
-                    properties: {
-                      dealerVerified: { type: 'boolean' },
-                      businessName: { type: 'string' },
-                      tin: { type: 'string' },
-                      businessRegistrationNo: { type: 'string' },
-                    },
-                  },
-                },
-              },
-            },
-            '400': {
-              description: 'Validation error',
-              content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
-            },
-            '403': {
-              description: 'Dealer not verified',
               content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
             },
           },
@@ -590,10 +468,8 @@ export function buildOpenApiDoc() {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: ['tin', 'businessRegistrationNo', 'items'],
+                  required: ['items'],
                   properties: {
-                    tin: { type: 'string' },
-                    businessRegistrationNo: { type: 'string' },
                     items: {
                       type: 'array',
                       items: { $ref: '#/components/schemas/ImeiPair' },
@@ -609,8 +485,8 @@ export function buildOpenApiDoc() {
               description: 'Validation error',
               content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
             },
-            '403': {
-              description: 'Dealer not verified',
+            '404': {
+              description: 'IMEI not found',
               content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
             },
           },
@@ -641,7 +517,7 @@ export function buildOpenApiDoc() {
                     paymentMethod: {
                       type: 'string',
                       enum: ['mpu', 'kbzpay', 'wavepay'],
-                      example: 'kbzpay',
+                      example: 'mpu',
                     },
                   },
                 },
@@ -713,6 +589,8 @@ export function buildOpenApiDoc() {
         post: {
           tags: ['Claims'],
           summary: 'Create device claim',
+          description:
+            'UI-minimal payload: imei1 + optional imei2/reason/devicePhoto. Claimant identity is enriched from the authenticated profile.',
           security: bearerAuth,
           requestBody: {
             required: true,
@@ -720,24 +598,11 @@ export function buildOpenApiDoc() {
               'application/json': {
                 schema: {
                   type: 'object',
-                  required: [
-                    'fullName',
-                    'nrcNumber',
-                    'phone',
-                    'address',
-                    'townshipId',
-                    'imei1',
-                  ],
+                  required: ['imei1'],
                   properties: {
-                    fullName: { type: 'string', example: 'Maung Maung' },
-                    nrcNumber: { type: 'string', example: '12/ABC(N)123456' },
-                    phone: { type: 'string', example: '09123456789' },
-                    address: { type: 'string' },
-                    townshipId: { type: 'integer', example: 1 },
                     imei1: { type: 'string', example: '359876543210108' },
                     imei2: { type: 'string', nullable: true },
-                    nrcFrontUrl: { type: 'string' },
-                    nrcBackUrl: { type: 'string' },
+                    reason: { type: 'string', nullable: true },
                     devicePhotoUrl: { type: 'string' },
                   },
                 },
@@ -774,14 +639,10 @@ export function buildOpenApiDoc() {
         get: {
           tags: ['NRC'],
           summary: 'List NRC townships',
-          security: bearerAuth,
+          description: 'Public reference endpoint (no auth).',
           responses: {
             '200': {
               description: 'Townships reference data',
-            },
-            '401': {
-              description: 'Unauthorized',
-              content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
             },
           },
         },
@@ -816,6 +677,7 @@ export function buildOpenApiDoc() {
         get: {
           tags: ['BFF'],
           summary: 'BFF dashboard aggregate',
+          security: bearerAuth,
           responses: {
             '200': { description: 'Dashboard payload' },
             '502': { description: 'Upstream error' },

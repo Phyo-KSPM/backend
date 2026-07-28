@@ -20,8 +20,8 @@ ON CONFLICT (id) DO UPDATE SET
 SELECT setval(pg_get_serial_sequence('nrc_townships', 'id'), GREATEST((SELECT MAX(id) FROM nrc_townships), 210));
 
 INSERT INTO users (
-  id, email, agent_id, password_hash, phone, full_name, address, township_id,
-  business_name, tin, business_registration_no, dealer_verified
+  id, email, agent_id, password_hash, phone, full_name, nrc_no, address, township_id,
+  business_name
 ) VALUES
 (
   'b1f2a3c4-d5e6-7890-abcd-ef1234567890',
@@ -30,12 +30,10 @@ INSERT INTO users (
   '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
   '09791243682',
   'Maung Maung',
+  '10/MADAMA(N)123456',
   'No 27(G), Mayangone, Yangon',
   210,
-  'QHRM Trading',
-  '123456789',
-  'REG-2026-001',
-  TRUE
+  'QHRM Trading'
 ),
 (
   'c2a3b4c5-e6f7-8901-bcde-f12345678901',
@@ -44,12 +42,10 @@ INSERT INTO users (
   '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
   '09123456789',
   'Aung Aung',
+  '9/KAMANA(N)654321',
   'No 12, Kamayut, Yangon',
   145,
-  'Aung Mobile Shop',
-  '234567890',
-  'REG-2026-002',
-  TRUE
+  'Aung Mobile Shop'
 ),
 (
   'd3b4c5d6-f708-9012-cdef-123456789012',
@@ -58,24 +54,20 @@ INSERT INTO users (
   '$2b$10$R1hjNMeyqyHgNYBPoABe0evTb8xERlGmmgbywLWsYtjPrx3448AFu',
   '09987654321',
   'Thiri Hlaing',
+  '10/MAYANGONE(N)112233',
   'No 5, Mayangone, Yangon',
   210,
-  'Thiri Trading Co.',
-  '345678901',
-  'REG-2026-003',
-  TRUE
+  'Thiri Trading Co.'
 )
 ON CONFLICT (email) DO UPDATE SET
   agent_id = EXCLUDED.agent_id,
   password_hash = EXCLUDED.password_hash,
   phone = EXCLUDED.phone,
   full_name = EXCLUDED.full_name,
+  nrc_no = EXCLUDED.nrc_no,
   address = EXCLUDED.address,
   township_id = EXCLUDED.township_id,
-  business_name = EXCLUDED.business_name,
-  tin = EXCLUDED.tin,
-  business_registration_no = EXCLUDED.business_registration_no,
-  dealer_verified = EXCLUDED.dealer_verified;
+  business_name = EXCLUDED.business_name;
 
 INSERT INTO devices (
   id, imei1, imei2, brand, product_name, model_name, serial_number,

@@ -19,19 +19,27 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function bindingResponse(b: BindingRow, includeExtras = false) {
+function resolveDeviceId(dto: { deviceId?: string; deviceFingerprint?: string }): string | undefined {
+  const id = dto.deviceId?.trim() || dto.deviceFingerprint?.trim();
+  return id || undefined;
+}
+
+function bindingResponse(b: BindingRow) {
+  return {
+    deviceId: b.device_fingerprint,
+    boundAt: new Date(b.bound_at).toISOString(),
+  };
+}
+
+function bindingDetailResponse(b: BindingRow) {
   return {
     bound: true,
-    deviceFingerprint: b.device_fingerprint,
+    deviceId: b.device_fingerprint,
     deviceName: b.device_name,
     platform: b.platform,
+    appVersion: b.app_version,
     boundAt: new Date(b.bound_at).toISOString(),
-    ...(includeExtras
-      ? {
-          appVersion: b.app_version,
-          lastSeenAt: new Date(b.last_seen_at).toISOString(),
-        }
-      : {}),
+    lastSeenAt: new Date(b.last_seen_at).toISOString(),
   };
 }
 
@@ -44,18 +52,18 @@ function mobilePlatform(platform?: string): DevicePlatform {
 }
 
 /**
- * Production auth:
+ * Access-token session auth (no refresh endpoint):
  * - Access: HS256 JWT (jti = session id)
- * - Refresh: opaque token, hash stored in auth_sessions
- * - Mobile (android/ios): one-device fingerprint bind
- * - Web admin: no device bind (does not conflict with mobile)
+ * - Session row stored for logout revoke only
+ * - Mobile (android/ios): one-device bind via deviceId
+ * - Web admin: no device bind
  */
-async function issueTokens(user: PublicUser, deviceFingerprint: string) {
-  const refreshToken = `rt_${randomUUID().replace(/-/g, '')}`;
-  const expiresAt = new Date(Date.now() + env.refreshTokenTtlSec * 1000);
+async function issueAccessSession(user: PublicUser, deviceFingerprint: string) {
+  const sessionToken = `st_${randomUUID().replace(/-/g, '')}`;
+  const expiresAt = new Date(Date.now() + env.accessTokenTtlSec * 1000);
   const session = await AuthRepository.createSession({
     userId: user.id,
-    refreshTokenHash: hashToken(refreshToken),
+    sessionTokenHash: hashToken(sessionToken),
     deviceFingerprint,
     expiresAt,
   });
@@ -68,7 +76,6 @@ async function issueTokens(user: PublicUser, deviceFingerprint: string) {
 
   return {
     accessToken,
-    refreshToken,
     tokenType: 'Bearer' as const,
     expiresIn: env.accessTokenTtlSec,
   };
@@ -80,6 +87,7 @@ export const AuthService = {
     const agentId = dto.agentId?.trim();
     const password = dto.password;
     const web = isWebLogin(dto.platform);
+    const deviceId = resolveDeviceId(dto);
 
     if ((!email && !agentId) || !password) {
       return {
@@ -90,12 +98,12 @@ export const AuthService = {
       };
     }
 
-    if (!web && !dto.deviceFingerprint) {
+    if (!web && !deviceId) {
       return {
         ok: false as const,
         status: 400,
         code: 'VALIDATION_ERROR',
-        message: 'deviceFingerprint is required for mobile login',
+        message: 'deviceId is required for mobile login',
       };
     }
 
@@ -114,8 +122,7 @@ export const AuthService = {
       };
     }
 
-    const sessionFingerprint =
-      dto.deviceFingerprint?.trim() || `web-admin:${user.id}`;
+    const sessionFingerprint = deviceId || `web-admin:${user.id}`;
 
     let deviceBinding: ReturnType<typeof bindingResponse> | null = null;
 
@@ -150,54 +157,16 @@ export const AuthService = {
     }
 
     await AuthRepository.revokeAllSessionsForUser(user.id);
-    const tokens = await issueTokens(user.public, sessionFingerprint);
+    const tokens = await issueAccessSession(user.public, sessionFingerprint);
 
     return {
       ok: true as const,
       data: {
         ...tokens,
-        user: user.public,
         deviceBinding,
+        user: user.public,
       },
     };
-  },
-
-  async refresh(refreshToken?: string) {
-    if (!refreshToken) {
-      return {
-        ok: false as const,
-        status: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'refreshToken is required',
-      };
-    }
-
-    const session = await AuthRepository.findActiveSessionByRefreshHash(
-      hashToken(refreshToken)
-    );
-    if (!session) {
-      return {
-        ok: false as const,
-        status: 401,
-        code: 'UNAUTHORIZED',
-        message: 'Invalid or expired refresh token',
-      };
-    }
-
-    const user = await AuthRepository.findUserById(session.user_id);
-    if (!user) {
-      await AuthRepository.revokeSession(session.id);
-      return {
-        ok: false as const,
-        status: 401,
-        code: 'UNAUTHORIZED',
-        message: 'User not found',
-      };
-    }
-
-    await AuthRepository.revokeSession(session.id);
-    const tokens = await issueTokens(user, session.device_fingerprint);
-    return { ok: true as const, data: tokens };
   },
 
   async logout(authorization?: string) {
@@ -234,20 +203,21 @@ export const AuthService = {
         message: 'No device binding for this account.',
       };
     }
-    return { ok: true as const, data: bindingResponse(binding, true) };
+    return { ok: true as const, data: bindingDetailResponse(binding) };
   },
 
   async bind(userId: string, dto: BindDeviceDto) {
-    if (!dto.deviceFingerprint) {
+    const deviceId = resolveDeviceId(dto);
+    if (!deviceId) {
       return {
         ok: false as const,
         status: 400,
-        code: 'DEVICE_FINGERPRINT_REQUIRED',
-        message: 'deviceFingerprint is required',
+        code: 'DEVICE_ID_REQUIRED',
+        message: 'deviceId is required',
       };
     }
     const existing = await AuthRepository.getBinding(userId);
-    if (existing && existing.device_fingerprint !== dto.deviceFingerprint) {
+    if (existing && existing.device_fingerprint !== deviceId) {
       return {
         ok: false as const,
         status: 409,
@@ -262,7 +232,7 @@ export const AuthService = {
         })
       : await AuthRepository.createBinding({
           userId,
-          deviceFingerprint: dto.deviceFingerprint,
+          deviceFingerprint: deviceId,
           deviceName: dto.deviceName || 'Unknown device',
           platform: dto.platform === 'ios' ? 'ios' : 'android',
           appVersion: dto.appVersion || '1.0.0',

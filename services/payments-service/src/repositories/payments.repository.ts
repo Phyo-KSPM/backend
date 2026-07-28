@@ -9,15 +9,6 @@ export const PaymentsRepository = {
     try {
       await client.query('BEGIN');
 
-      const userRes = await client.query<{
-        business_name: string | null;
-        dealer_verified: boolean;
-      }>(`SELECT business_name, dealer_verified FROM users WHERE id = $1`, [userId]);
-      const user = userRes.rows[0];
-      if (!user?.dealer_verified) {
-        throw Object.assign(new Error('Dealer not verified'), { code: 'DEALER_NOT_VERIFIED' });
-      }
-
       const seqRes = await client.query<{ n: string }>(
         `SELECT COUNT(*)::text AS n FROM payment_batches`
       );
@@ -29,15 +20,13 @@ export const PaymentsRepository = {
         id: string;
         batch_id: string;
         status: string;
-        dealer_verified: boolean;
         expires_at: Date;
       }>(
         `INSERT INTO payment_batches
-           (batch_id, user_id, tin, business_registration_no, dealer_business_name,
-            dealer_verified, status, expires_at)
-         VALUES ($1, $2, $3, $4, $5, TRUE, 'ready', $6)
-         RETURNING id, batch_id, status, dealer_verified, expires_at`,
-        [batchCode, userId, dto.tin, dto.businessRegistrationNo, user.business_name, expiresAt.toISOString()]
+           (batch_id, user_id, status, expires_at)
+         VALUES ($1, $2, 'ready', $3)
+         RETURNING id, batch_id, status, expires_at`,
+        [batchCode, userId, expiresAt.toISOString()]
       );
       const batch = batchRes.rows[0];
       const items = [];
@@ -78,7 +67,6 @@ export const PaymentsRepository = {
       return {
         batchId: batch.batch_id,
         status: batch.status,
-        dealerVerified: batch.dealer_verified,
         totalTax: items.reduce((s, i) => s + i.taxAmount, 0),
         expiresAt: new Date(batch.expires_at).toISOString(),
         items,
@@ -98,10 +86,9 @@ export const PaymentsRepository = {
       batch_id: string;
       user_id: string;
       status: string;
-      dealer_business_name: string | null;
       tax_application_id: string | null;
     }>(
-      `SELECT id, batch_id, user_id, status, dealer_business_name, tax_application_id
+      `SELECT id, batch_id, user_id, status, tax_application_id
        FROM payment_batches
        WHERE id::text = $1 OR batch_id = $1
        LIMIT 1`,
@@ -132,6 +119,13 @@ export const PaymentsRepository = {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+
+      const userRes = await client.query<{
+        full_name: string;
+        phone: string | null;
+      }>(`SELECT full_name, phone FROM users WHERE id = $1`, [batch.user_id]);
+      const payer = userRes.rows[0];
+
       const totalAmount = batch.items.reduce((s, i) => s + i.tax_amount, 0);
       const paidAt = new Date();
       const paymentId = `${paidAt.toISOString().replace(/\D/g, '').slice(0, 14)}-1`;
@@ -139,9 +133,9 @@ export const PaymentsRepository = {
 
       const payRes = await client.query<{ payment_id: string; gateway_ref: string | null; paid_at: Date }>(
         `INSERT INTO payments
-           (payment_id, user_id, device_id, batch_id, tax_application_id, payer_name,
+           (payment_id, user_id, device_id, batch_id, tax_application_id, payer_name, payer_phone,
             payment_method, gateway_ref, total_amount, payment_status, paid_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7::payment_method, $8, $9, 'success', $10)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::payment_method, $9, $10, 'success', $11)
          RETURNING payment_id, gateway_ref, paid_at`,
         [
           paymentId,
@@ -149,7 +143,8 @@ export const PaymentsRepository = {
           first?.device_id ?? null,
           batch.id,
           batch.tax_application_id,
-          batch.dealer_business_name,
+          payer?.full_name ?? null,
+          payer?.phone ?? null,
           method,
           `${method.toUpperCase()}-8f2a`,
           totalAmount,

@@ -14,18 +14,6 @@ export const AuthController = {
     res.json(result.data);
   },
 
-  async refresh(req: Request, res: Response): Promise<void> {
-    const result = await AuthService.refresh(req.body?.refreshToken);
-    if (!result.ok) {
-      res.status(result.status).json({
-        success: false,
-        error: { code: result.code, message: result.message },
-      });
-      return;
-    }
-    res.json(result.data);
-  },
-
   async logout(req: Request, res: Response): Promise<void> {
     const result = await AuthService.logout(req.header('authorization') || undefined);
     if (!result.ok) {

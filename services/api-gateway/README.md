@@ -7,7 +7,7 @@
 
 - Exposes the public API under `/openapi/v1` (and legacy `/api`)
 - Proxies each path to the correct domain microservice
-- Enforces **JWT auth** (except login / refresh / bff login)
+- Enforces **JWT auth** (except login / bff login / nrc townships)
 - Enforces **rate limits** (global + login + IMEI)
 - Serves **localhost-only** `/health` (blocked when reached via nginx / `X-Forwarded-For`)
 
@@ -15,7 +15,7 @@
 
 | Access | Routes |
 |--------|--------|
-| Public (no token) | `POST /login`, `POST /auth/login`, `POST /auth/refresh`, `POST /bff/login` |
+| Public (no token) | `POST /login`, `POST /auth/login`, `POST /bff/login`, `GET /nrc/townships` |
 | Localhost only | `GET /health` |
 | Bearer JWT required | Everything else under `/openapi/v1/*` |
 
@@ -38,7 +38,7 @@ IP is taken from `X-Forwarded-For` (first hop) when behind nginx (`trust proxy` 
 | Gateway path | Upstream |
 |--------------|----------|
 | `/login`, `/auth/*`, `/device/*` | auth-service `:3010` |
-| `/profile`, `/dealer/*`, `/users/*` | users-service `:3011` |
+| `/profile`, `/users/*` | users-service `:3011` |
 | `/imei/*` | devices-service `:3012` |
 | `/tax/*` | tax-service `:3013` |
 | `/payments/*` | payments-service `:3014` |

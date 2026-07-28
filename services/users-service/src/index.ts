@@ -18,7 +18,6 @@ async function bootstrap() {
 
   const auth = requireAuth(env.jwtSecret);
   app.get('/profile', auth, UsersController.profile);
-  app.post('/dealer/verify', auth, UsersController.verifyDealer);
   app.use('/users', routes);
 
   app.use((req, res) => {

@@ -50,7 +50,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-  CREATE TYPE claim_doc_type AS ENUM ('nrc_front', 'nrc_back', 'device_photo');
+  CREATE TYPE claim_doc_type AS ENUM ('device_photo');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -79,20 +79,11 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   phone TEXT,
   full_name TEXT NOT NULL,
+  nrc_no TEXT,
   address TEXT,
   township_id BIGINT REFERENCES nrc_townships(id),
   business_name TEXT,
-  tin TEXT,
-  business_registration_no TEXT,
-  dealer_verified BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS refresh_tokens (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token_hash TEXT NOT NULL UNIQUE,
-  expires_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_device_bindings (
@@ -159,10 +150,6 @@ CREATE TABLE IF NOT EXISTS payment_batches (
   batch_id TEXT NOT NULL UNIQUE,
   user_id UUID NOT NULL REFERENCES users(id),
   tax_application_id UUID REFERENCES tax_applications(id),
-  tin TEXT,
-  business_registration_no TEXT,
-  dealer_business_name TEXT,
-  dealer_verified BOOLEAN NOT NULL DEFAULT FALSE,
   status payment_batch_status NOT NULL DEFAULT 'draft',
   retry_count INTEGER NOT NULL DEFAULT 0,
   last_payment_error TEXT,

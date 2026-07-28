@@ -5,9 +5,10 @@
 
 ## What it does
 
-- Creates a claim with claimant identity + IMEI (+ optional document URLs)
+- Creates a claim from IMEI (+ optional reason + device photo)
+- Enriches claimant identity from the authenticated user profile
 - Lists claims for the authenticated user
-- Stores optional document URLs as claim documents
+- Stores `device_photo` document only
 
 ## Routes
 
@@ -23,24 +24,19 @@ Via gateway: `/openapi/v1/claims`
 
 ```json
 {
-  "fullName": "Aung Aung",
-  "nrcNumber": "12/ABC(N)123456",
-  "phone": "09123456789",
-  "address": "Yangon",
-  "townshipId": 145,
   "imei1": "359876543210108",
   "imei2": null,
-  "nrcFrontUrl": "https://example.com/nrc-front.jpg",
-  "nrcBackUrl": "https://example.com/nrc-back.jpg",
+  "reason": "IMEI2 lost after factory reset",
   "devicePhotoUrl": "https://example.com/device.jpg"
 }
 ```
 
-Required: `fullName`, `nrcNumber`, `phone`, `address`, `townshipId`, `imei1`
+Required: `imei1`  
+Server enrichment: `fullName`, `phone`, `nrcNo`, `address`, `townshipId` from profile
 
 ## Data
 
-Tables: `device_claims`, `claim_documents`
+Tables: `device_claims`, `claim_documents` (`doc_type = device_photo`)
 
 ## Run
 

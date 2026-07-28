@@ -6,5 +6,4 @@ import { env } from '../config/env';
 const router = Router();
 router.use(requireAuth(env.jwtSecret));
 router.get('/profile', UsersController.profile);
-router.post('/dealer/verify', UsersController.verifyDealer);
 export default router;

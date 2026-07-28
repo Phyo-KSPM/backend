@@ -1,22 +1,17 @@
 import { query } from '../config/database';
 import { BindingRow, DevicePlatform, PublicUser, UserRow } from '../types/auth.types';
 
-const USER_COLUMNS = `id, email, agent_id, password_hash, phone, full_name, address, township_id,
-              business_name, tin, business_registration_no, dealer_verified`;
+const USER_COLUMNS = `id, email, agent_id, password_hash, phone, full_name, nrc_no, address,
+              township_id, business_name`;
 
 function toPublicUser(u: UserRow): PublicUser {
   return {
     id: u.id,
-    agentId: u.agent_id,
     email: u.email,
     phone: u.phone,
     fullName: u.full_name,
+    nrcNo: u.nrc_no,
     address: u.address,
-    townshipId: u.township_id != null ? Number(u.township_id) : null,
-    businessName: u.business_name,
-    tin: u.tin,
-    businessRegistrationNo: u.business_registration_no,
-    dealerVerified: u.dealer_verified,
   };
 }
 
@@ -113,7 +108,7 @@ export const AuthRepository = {
 
   async createSession(input: {
     userId: string;
-    refreshTokenHash: string;
+    sessionTokenHash: string;
     deviceFingerprint: string;
     expiresAt: Date;
   }): Promise<AuthSessionRow> {
@@ -124,27 +119,12 @@ export const AuthRepository = {
        RETURNING id, user_id, refresh_token_hash, device_fingerprint, expires_at, revoked_at`,
       [
         input.userId,
-        input.refreshTokenHash,
+        input.sessionTokenHash,
         input.deviceFingerprint,
         input.expiresAt.toISOString(),
       ]
     );
     return rows[0];
-  },
-
-  async findActiveSessionByRefreshHash(
-    tokenHash: string
-  ): Promise<AuthSessionRow | null> {
-    const { rows } = await query<AuthSessionRow>(
-      `SELECT id, user_id, refresh_token_hash, device_fingerprint, expires_at, revoked_at
-       FROM auth_sessions
-       WHERE refresh_token_hash = $1
-         AND revoked_at IS NULL
-         AND expires_at > NOW()
-       LIMIT 1`,
-      [tokenHash]
-    );
-    return rows[0] ?? null;
   },
 
   async findActiveSessionById(sessionId: string): Promise<AuthSessionRow | null> {

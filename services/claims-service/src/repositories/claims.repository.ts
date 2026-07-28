@@ -9,6 +9,27 @@ export const ClaimsRepository = {
     try {
       await client.query('BEGIN');
 
+      const profileRes = await client.query<{
+        full_name: string;
+        nrc_no: string | null;
+        phone: string | null;
+        address: string | null;
+        township_id: string | null;
+      }>(
+        `SELECT full_name, nrc_no, phone, address, township_id
+         FROM users WHERE id = $1 LIMIT 1`,
+        [userId]
+      );
+      const profile = profileRes.rows[0];
+      if (!profile) {
+        throw Object.assign(new Error('User not found'), { code: 'NOT_FOUND' });
+      }
+      if (!profile.nrc_no || !profile.phone) {
+        throw Object.assign(new Error('User profile is incomplete for claims'), {
+          code: 'VALIDATION_ERROR',
+        });
+      }
+
       const deviceRes = await client.query<{
         id: string;
         brand: string | null;
@@ -24,11 +45,6 @@ export const ClaimsRepository = {
         id: string;
         claim_id: string;
         status: string;
-        claimant_full_name: string;
-        claimant_nrc_number: string;
-        claimant_phone: string;
-        address: string | null;
-        township_id: string | null;
         imei1: string;
         imei2: string | null;
         submitted_at: Date;
@@ -37,16 +53,15 @@ export const ClaimsRepository = {
            (claim_id, user_id, claimant_full_name, claimant_nrc_number, claimant_phone, address,
             township_id, device_id, imei1, imei2, brand, model_name, status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'submitted')
-         RETURNING id, claim_id, status, claimant_full_name, claimant_nrc_number, claimant_phone,
-                   address, township_id, imei1, imei2, submitted_at`,
+         RETURNING id, claim_id, status, imei1, imei2, submitted_at`,
         [
           claimCode,
           userId,
-          dto.fullName,
-          dto.nrcNumber,
-          dto.phone,
-          dto.address,
-          dto.townshipId,
+          profile.full_name,
+          profile.nrc_no,
+          profile.phone,
+          profile.address,
+          profile.township_id,
           device?.id ?? null,
           dto.imei1,
           dto.imei2 ?? device?.imei2 ?? null,
@@ -55,11 +70,11 @@ export const ClaimsRepository = {
         ]
       );
       const claim = claimRes.rows[0];
-      const docs = [
-        { type: 'nrc_front', url: dto.nrcFrontUrl || 'https://cdn.example/front.jpg' },
-        { type: 'nrc_back', url: dto.nrcBackUrl || 'https://cdn.example/back.jpg' },
-        { type: 'device_photo', url: dto.devicePhotoUrl || 'https://cdn.example/device.jpg' },
-      ];
+      const photoUrl =
+        dto.devicePhotoUrl ||
+        dto.devicePhoto ||
+        'https://cdn.example/device.jpg';
+      const docs = [{ type: 'device_photo' as const, url: photoUrl }];
       for (const d of docs) {
         await client.query(
           `INSERT INTO claim_documents (claim_id, doc_type, file_url)
@@ -78,13 +93,9 @@ export const ClaimsRepository = {
       return {
         claimId: claim.claim_id,
         status: claim.status,
-        fullName: claim.claimant_full_name,
-        nrcNumber: claim.claimant_nrc_number,
-        phone: claim.claimant_phone,
-        address: claim.address,
-        townshipId: claim.township_id != null ? Number(claim.township_id) : null,
         imei1: claim.imei1,
         imei2: claim.imei2,
+        reason: dto.reason ?? null,
         submittedAt: new Date(claim.submitted_at).toISOString(),
         documents: docs.map((d) => ({ docType: d.type, fileUrl: d.url })),
       };

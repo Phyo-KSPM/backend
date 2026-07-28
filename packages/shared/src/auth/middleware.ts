@@ -16,7 +16,7 @@ export function requireAuth(jwtSecret: string) {
   };
 }
 
-/** Skip auth when `isPublic` returns true (login / refresh only). */
+/** Skip auth when `isPublic` returns true (login / nrc reference only). */
 export function requireAuthUnless(
   jwtSecret: string,
   isPublic: (req: Request) => boolean
@@ -35,12 +35,10 @@ export function requireAuthUnless(
 export function isGatewayPublicRoute(req: Request): boolean {
   // CORS preflight must pass without Authorization
   if (req.method === 'OPTIONS') return true;
-  if (req.method !== 'POST') return false;
   const path = req.path.replace(/\/+$/, '') || '/';
-  return (
-    path === '/login' ||
-    path === '/auth/login' ||
-    path === '/auth/refresh' ||
-    path === '/bff/login'
-  );
+
+  if (req.method === 'GET' && path === '/nrc/townships') return true;
+
+  if (req.method !== 'POST') return false;
+  return path === '/login' || path === '/auth/login' || path === '/bff/login';
 }

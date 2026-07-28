@@ -1,11 +1,11 @@
 # payments-service
 
 **Port:** `3014` (`PAYMENTS_SERVICE_PORT`)  
-**Role:** Payment batches and payment history for verified dealers.
+**Role:** Payment batches and payment history.
 
 ## What it does
 
-- Creates a payment batch from IMEI items (requires dealer-verified user)
+- Creates a payment batch from IMEI items (`items` only; payer context from JWT user)
 - “Pays” a batch (simulated gateway — **not** a real MPU/KBZ/Wave webhook yet)
 - Lists / gets payments for the authenticated user only
 
@@ -25,23 +25,20 @@ Via gateway: `/openapi/v1/payments/...`
 
 ```json
 {
-  "tin": "234567890",
-  "businessRegistrationNo": "REG-2026-002",
-  "items": [{ "imei1": "359876543210108" }]
+  "items": [{ "imei1": "359876543210108", "imei2": "359876543210109" }]
 }
 ```
 
 ## Pay batch body
 
 ```json
-{ "paymentMethod": "kbzpay" }
+{ "paymentMethod": "mpu" }
 ```
 
 `paymentMethod`: `mpu` | `kbzpay` | `wavepay`
 
 ## Business rules
 
-- Non-verified dealer → **403** `DEALER_NOT_VERIFIED`
 - Pay / get by other user → **403**
 - Already paid batch → **409** `ALREADY_PAID`
 - Payment success is **simulated** (marks devices `tax_payment_status = paid`, writes activity)

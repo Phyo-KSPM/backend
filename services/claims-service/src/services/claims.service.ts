@@ -3,19 +3,31 @@ import { CreateClaimDto } from '../types/claims.types';
 
 export const ClaimsService = {
   async create(dto: CreateClaimDto, userId: string) {
-    const required = ['fullName', 'nrcNumber', 'phone', 'address', 'townshipId', 'imei1'] as const;
-    for (const key of required) {
-      if (dto[key] === undefined || dto[key] === null || dto[key] === '') {
+    if (!dto.imei1) {
+      return {
+        ok: false as const,
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'imei1 is required',
+      };
+    }
+    try {
+      const data = await ClaimsRepository.create(userId, dto);
+      return { ok: true as const, data };
+    } catch (err: any) {
+      if (err.code === 'NOT_FOUND') {
+        return { ok: false as const, status: 404, code: 'NOT_FOUND', message: err.message };
+      }
+      if (err.code === 'VALIDATION_ERROR') {
         return {
           ok: false as const,
           status: 400,
           code: 'VALIDATION_ERROR',
-          message: `${key} is required`,
+          message: err.message,
         };
       }
+      throw err;
     }
-    const data = await ClaimsRepository.create(userId, dto);
-    return { ok: true as const, data };
   },
 
   async list(userId: string) {

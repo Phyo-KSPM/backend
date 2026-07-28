@@ -28,19 +28,20 @@ export const BffController = {
         email,
         agentId,
         password,
+        deviceId,
         deviceFingerprint,
         deviceName,
         platform,
         appVersion,
       } = req.body || {};
 
-      if ((!email && !agentId) || !password || !deviceFingerprint) {
+      const resolvedDeviceId = deviceId || deviceFingerprint;
+      if ((!email && !agentId) || !password || !resolvedDeviceId) {
         res.status(400).json({
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message:
-              'password, deviceFingerprint, and either email or agentId are required',
+            message: 'password, deviceId, and either email or agentId are required',
           },
         });
         return;
@@ -50,7 +51,7 @@ export const BffController = {
         email,
         agentId,
         password,
-        deviceFingerprint,
+        deviceId: resolvedDeviceId,
         deviceName,
         platform,
         appVersion,

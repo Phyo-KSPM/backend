@@ -1,7 +1,7 @@
 # auth-service
 
 **Port:** `3010` (`AUTH_SERVICE_PORT`)  
-**Role:** JWT access + refresh sessions; email or Agent Account ID login.
+**Role:** JWT access sessions; email or Agent Account ID login. No refresh-token endpoint.
 
 ## Login identifiers
 
@@ -10,14 +10,14 @@
 | `email` | Mobile / email user |
 | `agentId` | Web Agent User (`AGT-2026-001`, …) |
 | `password` | Required |
-| `deviceFingerprint` | Required for mobile (`android` / `ios`) |
+| `deviceId` | Required for mobile (`android` / `ios`) |
 | `platform` | `android` \| `ios` = device bind; `web` = admin console (no bind) |
 
 ## Client paths (via api-gateway only)
 
 | Client | Gateway path | Notes |
 |--------|--------------|--------|
-| Mobile | `POST /openapi/v1/bff/login` | BFF shapes mobile response (`success`, `user.agentId`, `device`) |
+| Mobile | `POST /openapi/v1/bff/login` | BFF shapes mobile response |
 | Web admin | `POST /openapi/v1/login` | Raw auth response; use `platform: "web"` |
 
 ## Mobile body example
@@ -26,10 +26,10 @@
 {
   "email": "aung@dealer.com",
   "password": "secret123",
-  "deviceFingerprint": "unique-phone-id",
+  "deviceId": "android-a1b2c3d4",
   "platform": "android",
-  "deviceName": "Pixel 8",
-  "appVersion": "1.0.0"
+  "deviceName": "Galaxy A16",
+  "appVersion": "1.0.0+1"
 }
 ```
 
@@ -40,7 +40,7 @@
   "agentId": "AGT-2026-002",
   "password": "secret123",
   "platform": "web",
-  "deviceFingerprint": "ceir-admin-web-…",
+  "deviceId": "ceir-admin-web-…",
   "deviceName": "CEIR Admin Console"
 }
 ```
@@ -57,9 +57,13 @@ Password: `secret123`
 
 ## Tokens
 
-- **accessToken:** HS256 JWT (`sub`, `email`, `jti`, `exp`)
-- **refreshToken:** `rt_…`, hash in `auth_sessions`
+- **accessToken:** HS256 JWT (`sub`, `email`, `jti`, `exp`) — default TTL 7 days
+- Session row in `auth_sessions` for logout revoke only (no refresh token returned)
 - Web login does **not** overwrite mobile device binding
+
+## Public user fields
+
+`id`, `email`, `phone`, `fullName`, `nrcNo`, `address`
 
 ## Routes
 
@@ -67,7 +71,6 @@ Password: `secret123`
 |--------|------|------|
 | POST | `/login` | No |
 | POST | `/auth/login` | No |
-| POST | `/auth/refresh` | No |
 | POST | `/auth/logout` | Bearer |
 | GET/POST | `/device/*` | Bearer |
 

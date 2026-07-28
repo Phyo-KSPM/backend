@@ -17,28 +17,24 @@
 {
   "success": true,
   "accessToken": "eyJ...",
-  "refreshToken": "rt_...",
   "tokenType": "Bearer",
-  "expiresIn": 3600,
+  "expiresIn": 604800,
+  "deviceBinding": {
+    "deviceId": "android-a1b2c3d4",
+    "boundAt": "2026-07-02T13:26:00Z"
+  },
   "user": {
     "id": "...",
-    "agentId": "AGT-2026-002",
     "email": "aung@dealer.com",
-    "fullName": "Aung Aung",
     "phone": "...",
-    "dealerVerified": true
-  },
-  "device": {
-    "bound": true,
-    "fingerprint": "...",
-    "name": "...",
-    "platform": "android",
-    "boundAt": "..."
+    "fullName": "Aung Aung",
+    "nrcNo": "9/KAMANA(N)654321",
+    "address": "..."
   }
 }
 ```
 
-Accepts `email` **or** `agentId` + `password` + `deviceFingerprint`.
+Accepts `email` **or** `agentId` + `password` + `deviceId`.
 
 Web admin should use gateway `POST /openapi/v1/login` with `platform: "web"` (not this BFF shape).
 

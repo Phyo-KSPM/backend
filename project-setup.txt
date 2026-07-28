@@ -257,9 +257,9 @@ B6. ecosystem path
   Code မှာ ပါပြီးသား:
     - HS256 JWT + expiry
     - API Gateway auth middleware (token မပါ → 401)
-    - Public: POST /login, POST /auth/refresh, POST /bff/login သာ
+    - Public: POST /login, POST /bff/login, GET /nrc/townships သာ
     - GET /health = localhost / SSH သာ (nginx/public proxy → 404)
-    - IMEI / NRC / profile / tax / payments / claims / activities အားလုံး token လို
+    - IMEI / profile / tax / payments / claims / activities အားလုံး token လို
     - Gateway rate limits: all 120/min, login 20/15min, auth 40/15min, IMEI 30/min (429)
     - ownership checks, weak JWT_SECRET boot-fail, Swagger prod default off
   Server / ops ဘက်မှာ အောက်ပါကို စစ်ပါ။
@@ -301,18 +301,17 @@ B6. ecosystem path
   [ ] 9. PM2 ကို root မဟုတ် non-root user ဖြင့် run (least privilege)
   [ ] 10. payBatch = simulate သာ — real MPU/KBZ/Wave webhook မထည့်မချင်း
          production fiscal confirmation အဖြစ် မယူရ
-  [ ] 11. Dealer verify = local match သာ — IRD integration အစစ် လိုအပ်သေး
-  [ ] 12. Device fingerprint ကို mutating API များမှာပါ enforce (login သာမဟုတ်)
+  [ ] 11. Device id ကို mutating API များမှာပါ enforce (login သာမဟုတ်)
 
 
   ---------- အလယ် / နိမ့် ----------
 
-  [ ] 13. helmet / security headers (gateway)
-  [ ] 14. Gateway-level rate limit (login + IMEI)
-  [ ] 15. Claim document URL allowlist / controlled upload
-  [ ] 16. Audit log (failed login, pay, verify)
-  [ ] 17. npm audit + dependency updates
-  [ ] 18. Secrets manager (prod မှာ .env file သက်သက် မထား)
+  [ ] 12. helmet / security headers (gateway)
+  [ ] 13. Gateway-level rate limit (login + IMEI)
+  [ ] 14. Claim document URL allowlist / controlled upload
+  [ ] 15. Audit log (failed login, pay)
+  [ ] 16. npm audit + dependency updates
+  [ ] 17. Secrets manager (prod မှာ .env file သက်သက် မထား)
 
 
   ---------- Deploy ပြီး smoke (auth) ----------
@@ -323,7 +322,7 @@ B6. ecosystem path
     # Login → accessToken ရမှ profile ခေါ်
     curl -s -X POST https://service.ceir.gov.mm/openapi/v1/login \
       -H "Content-Type: application/json" \
-      -d '{"email":"...","password":"...","deviceFingerprint":"..."}'
+      -d '{"email":"...","password":"...","deviceId":"..."}'
 
 
 ################################################################################
@@ -367,11 +366,10 @@ B6. ecosystem path
   Base: http://localhost:3000/openapi/v1
 
   POST /login
-  POST /auth/refresh
+  POST /auth/logout
   GET  /device/binding
   POST /device/bind
   GET  /profile
-  POST /dealer/verify
   POST /imei/check
   POST /imei/bulk-check
   POST /tax/applications
@@ -383,7 +381,7 @@ B6. ecosystem path
   POST /claims
   GET  /claims
   GET  /activities
-  GET  /nrc/townships
+  GET  /nrc/townships          (public)
 
 
 ################################################################################
@@ -396,7 +394,7 @@ B6. ecosystem path
 
   ★ Production မှာ ဤ password မထားရ — B7 checklist §4 ကြည့်
   ★ Swagger / README တွင် demo hint မဖော်ပြရန် (SWAGGER_DEMO_HINTS=false)
-  ★ Account တစ်ခု = deviceFingerprint တစ်ခု (binding) — တူသော fingerprint မမျှဝေရ
+  ★ Account တစ်ခု = deviceId တစ်ခု (binding) — တူသော deviceId မမျှဝေရ
 
 
 ################################################################################
@@ -424,7 +422,7 @@ B6. ecosystem path
     → seed + demo password စစ်
 
   ACCOUNT_BOUND_TO_OTHER_DEVICE
-    → တူညီသော deviceFingerprint သုံး
+    → တူညီသော deviceId သုံး
 
 
 ################################################################################

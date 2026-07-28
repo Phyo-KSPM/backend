@@ -16,7 +16,7 @@ router.use(
   rateLimit({ name: 'gw-all', windowMs: 60_000, max: 120, key: byIp })
 );
 
-/** Mobile API: Bearer token required except login / refresh */
+/** Mobile API: Bearer token required except login / nrc townships */
 router.use(requireAuthUnless(env.jwtSecret, isGatewayPublicRoute));
 
 function proxy(target: string, restorePrefix?: string) {
@@ -67,7 +67,6 @@ router.use('/auth', authLimit, proxy(env.authServiceUrl, '/auth'));
 router.use('/device', proxy(env.authServiceUrl, '/device'));
 
 router.use('/profile', proxy(env.usersServiceUrl, '/profile'));
-router.use('/dealer', proxy(env.usersServiceUrl, '/dealer'));
 router.use('/users', proxy(env.usersServiceUrl, '/users'));
 
 router.use('/imei', imeiLimit, proxy(env.devicesServiceUrl, '/imei'));
